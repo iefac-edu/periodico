@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <script>
+    (function() {
+      var url = window.location.href;
+      var fixed = url.replace(/\/macros\/u\/\d+\/s\//, '/macros/s/');
+      if (fixed !== url) window.location.replace(fixed);
+    })();
+  </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Periódico La Cima · Fe y Alegría</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,700;0,900;1,300;1,700&family=Lora:ital,wght@0,400;0,600;1,400;1,600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink:     #0d0d18;
+      --paper:   #f9f6ef;
+      --cream:   #ede9df;
+      --accent:  #b5251a;
+      --gold:    #c09030;
+      --muted:   #6d6c7a;
+      --border:  #dcd7c8;
+      --white:   #ffffff;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--paper); color: var(--ink);
+      font-family: 'Lora', serif; min-height: 100vh;
+    }
+
+    /* ── MASTHEAD ── */
+    .masthead {
+      background: var(--ink); padding: 0.55rem 2.5rem;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1.5px solid rgba(192,144,48,0.5);
+    }
+    .masthead-left {
+      font-family: 'DM Sans', sans-serif; font-size: 0.72rem;
+      letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted);
+    }
+    .masthead-right {
+      font-family: 'DM Sans', sans-serif; font-size: 0.72rem;
+      letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold);
+    }
+
+    /* ── NAMEPLATE ── */
+    .nameplate {
+      background: var(--ink); text-align: center;
+      padding: 3rem 2rem 2.5rem; position: relative; overflow: hidden;
+    }
+    .nameplate::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 30px,
+        rgba(255,255,255,0.025) 30px, rgba(255,255,255,0.025) 31px
+      );
+    }
+    .np-eyebrow {
+      font-family: 'DM Sans', sans-serif; font-size: 0.7rem;
+      letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold);
+      margin-bottom: 1rem; position: relative;
+    }
+    .np-title {
+      font-family: 'Fraunces', serif; font-weight: 900;
+      font-size: clamp(4rem, 10vw, 7.5rem); line-height: 0.88;
+      color: var(--paper); letter-spacing: -0.03em; position: relative;
+    }
+    .np-title em { font-style: italic; color: var(--gold); }
+    .np-school {
+      font-family: 'DM Sans', sans-serif; font-size: 0.78rem;
+      letter-spacing: 0.18em; text-transform: uppercase;
+      color: rgba(255,255,255,0.3); margin-top: 1.1rem; position: relative;
+    }
+    .np-ornament {
+      display: flex; align-items: center; gap: 0.75rem;
+      max-width: 420px; margin: 1.4rem auto 0; position: relative;
+    }
+    .np-ornament::before, .np-ornament::after {
+      content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.15);
+    }
+    .np-ornament span { color: var(--gold); font-size: 0.9rem; letter-spacing: 0.3em; }
+
+    /* ── NAV ── */
+    nav {
+      background: var(--cream); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; padding: 0 2.5rem;
+      position: sticky; top: 0; z-index: 200;
+      overflow-x: auto; scrollbar-width: none;
+    }
+    nav::-webkit-scrollbar { display: none; }
+    .nav-btn {
+      font-family: 'DM Sans', sans-serif; font-size: 0.78rem; font-weight: 600;
+      letter-spacing: 0.09em; text-transform: uppercase;
+      color: var(--muted); padding: 0.88rem 1rem;
+      border: none; border-bottom: 2px solid transparent; margin-bottom: -1px;
+      background: none; cursor: pointer; transition: all 0.2s; white-space: nowrap;
+    }
+    .nav-btn:hover { color: var(--ink); }
+    .nav-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .nav-spacer { flex: 1; }
+    .nav-search {
+      display: flex; align-items: center; gap: 0.45rem;
+      padding: 0.38rem 0.8rem; background: white;
+      border: 1px solid var(--border); border-radius: 100px; margin-left: 1rem;
+    }
+    .nav-search input {
+      border: none; outline: none; font-family: 'DM Sans', sans-serif;
+      font-size: 0.8rem; color: var(--ink); width: 130px; background: transparent;
+    }
+    .nav-search .si { color: var(--muted); font-size: 0.85rem; }
+
+    /* ── TICKER ── */
+    .ticker {
+      background: var(--accent); padding: 0.45rem 2.5rem;
+      display: none; align-items: center; gap: 1rem; overflow: hidden;
+    }
+    .ticker.show { display: flex; }
+    .ticker-tag {
+      font-family: 'DM Sans', sans-serif; font-size: 0.65rem; font-weight: 700;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      background: white; color: var(--accent); padding: 0.12rem 0.5rem; border-radius: 3px; white-space: nowrap;
+    }
+    .ticker-text {
+      font-family: 'DM Sans', sans-serif; font-size: 0.83rem; color: white;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    /* ── CONTAINER ── */
+    .container { max-width: 1160px; margin: 0 auto; padding: 0 2.5rem; }
+
+    /* ── PORTADA ── */
+    .portada { padding: 2.5rem 0 2rem; }
+    .portada-grid {
+      display: grid; grid-template-columns: 2fr 1fr;
+      border: 1px solid var(--border); background: var(--white);
+    }
+    .pg-main {
+      padding: 2rem; border-right: 1px solid var(--border);
+      cursor: pointer; transition: background 0.15s;
+    }
+    .pg-main:hover { background: var(--paper); }
+    .pg-side { display: flex; flex-direction: column; }
+    .pg-item {
+      padding: 1.2rem 1.5rem; border-bottom: 1px solid var(--border);
+      cursor: pointer; transition: background 0.15s; flex: 1;
+    }
+    .pg-item:last-child { border-bottom: none; }
+    .pg-item:hover { background: var(--paper); }
+
+    .cat-label {
+      font-family: 'DM Sans', sans-serif; font-size: 0.68rem; font-weight: 700;
+      letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent);
+      display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.6rem;
+    }
+    .cat-label::before { content: ''; width: 14px; height: 2px; background: var(--accent); }
+
+    .pg-main h2 {
+      font-family: 'Fraunces', serif; font-size: 2rem; font-weight: 700;
+      line-height: 1.15; margin-bottom: 0.9rem;
+    }
+    .pg-item h3 {
+      font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 700;
+      line-height: 1.3; margin-bottom: 0.45rem;
+    }
+
+    .excerpt {
+      font-size: 0.93rem; color: var(--muted); line-height: 1.7;
+    }
+    .meta {
+      font-family: 'DM Sans', sans-serif; font-size: 0.72rem; color: #9898a8;
+      margin-top: 0.7rem; display: flex; gap: 0.7rem; flex-wrap: wrap;
+    }
+    .mbadge {
+      display: inline-flex; align-items: center; gap: 0.25rem;
+      font-family: 'DM Sans', sans-serif; font-size: 0.68rem;
+      padding: 0.15rem 0.45rem; border-radius: 3px; margin-top: 0.45rem; margin-right: 0.25rem;
+    }
+    .mb-texto  { background: rgba(42,138,82,0.1); color: #1e6e3a; }
+    .mb-imagen { background: rgba(52,152,219,0.1); color: #1a6da0; }
+    .mb-video  { background: rgba(142,68,173,0.1); color: #6c3483; }
+
+    /* ── SECTION RULE ── */
+    .srule {
+      display: flex; align-items: center; gap: 1rem; margin: 2.5rem 0 1.5rem;
+    }
+    .srule h2 { font-family: 'Fraunces', serif; font-size: 1.2rem; font-weight: 700; white-space: nowrap; }
+    .srule::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    /* ── NEWS GRID ── */
+    .two-col { display: grid; grid-template-columns: 1fr 280px; gap: 3rem; margin-bottom: 3.5rem; }
+    .news-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.4rem; }
+
+    .ncard {
+      border-top: 3px solid var(--border); padding-top: 1rem;
+      cursor: pointer; transition: border-color 0.2s;
+    }
+    .ncard:hover { border-top-color: var(--accent); }
+    .ncard h3 {
+      font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 700;
+      line-height: 1.3; margin: 0.35rem 0 0.55rem;
+    }
+    .ncard p { font-size: 0.85rem; color: var(--muted); line-height: 1.65; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
+    /* ── SIDEBAR HISTÓRICO ── */
+    .historico { position: sticky; top: 48px; height: fit-content; }
+    .hist-title {
+      font-family: 'Fraunces', serif; font-size: 1.05rem; font-weight: 700;
+      padding-bottom: 0.7rem; border-bottom: 2px solid var(--ink); margin-bottom: 0.9rem;
+    }
+    .hmes-item { border-bottom: 1px solid var(--border); }
+    .hmes-hdr {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.7rem 0; cursor: pointer;
+      font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 600;
+      transition: color 0.15s; background: none; border: none; width: 100%; text-align: left;
+      color: var(--ink);
+    }
+    .hmes-hdr:hover { color: var(--accent); }
+    .hmes-hdr .cnt { font-size: 0.75rem; color: var(--muted); font-weight: 400; }
+    .hmes-hdr .arr { font-size: 0.65rem; color: var(--muted); transition: transform 0.2s; }
+    .hmes-hdr.open .arr { transform: rotate(90deg); }
+    .hmes-list { display: none; padding-bottom: 0.4rem; }
+    .hmes-list.open { display: block; }
+    .hmes-link {
+      display: block; font-family: 'DM Sans', sans-serif; font-size: 0.8rem;
+      color: var(--muted); padding: 0.28rem 0 0.28rem 0.7rem;
+      border-left: 2px solid transparent; cursor: pointer; transition: all 0.15s; line-height: 1.4;
+      background: none; border-top: none; border-bottom: none; border-right: none;
+      text-align: left; width: 100%;
+    }
+    .hmes-link:hover { color: var(--accent); border-left-color: var(--accent); }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(8,8,16,0.78);
+      display: none; align-items: flex-start; justify-content: center;
+      z-index: 9000; padding: 2rem 1rem; overflow-y: auto;
+      backdrop-filter: blur(5px);
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--paper); max-width: 700px; width: 100%;
+      border-radius: 4px; overflow: hidden;
+      animation: slideUp 0.3s ease;
+    }
+    @keyframes slideUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
+    .mhdr { background: var(--ink); padding: 2rem; position: relative; }
+    .mhdr-cat {
+      font-family: 'DM Sans', sans-serif; font-size: 0.68rem; font-weight: 700;
+      letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); margin-bottom: 0.7rem;
+    }
+    .mhdr h2 { font-family: 'Fraunces', serif; font-size: 1.75rem; color: var(--paper); line-height: 1.2; }
+    .mhdr-meta {
+      font-family: 'DM Sans', sans-serif; font-size: 0.77rem;
+      color: rgba(255,255,255,0.38); margin-top: 0.7rem; display: flex; gap: 0.7rem; flex-wrap: wrap;
+    }
+    .mclose {
+      position: absolute; top: 1.2rem; right: 1.2rem;
+      background: rgba(255,255,255,0.1); border: none; cursor: pointer;
+      color: white; font-size: 1.1rem; width: 34px; height: 34px;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s;
+    }
+    .mclose:hover { background: rgba(255,255,255,0.2); }
+    .mbody { padding: 2rem; }
+    .mbody .mresumen {
+      font-size: 1rem; font-style: italic; font-weight: 600;
+      line-height: 1.65; margin-bottom: 1.2rem; padding-bottom: 1.2rem;
+      border-bottom: 1px solid var(--border); color: var(--ink);
+    }
+    .mbody .mcuerpo { font-size: 0.97rem; line-height: 1.82; color: #22222e; white-space: pre-wrap; }
+    .mfooter {
+      padding: 1.1rem 2rem; background: var(--cream);
+      border-top: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;
+    }
+    .drive-link {
+      font-family: 'DM Sans', sans-serif; font-size: 0.8rem;
+      color: var(--accent); text-decoration: none;
+      display: flex; align-items: center; gap: 0.35rem;
+    }
+    .drive-link:hover { text-decoration: underline; }
+
+    /* ── EMPTY / LOADING ── */
+    .empty {
+      text-align: center; padding: 3.5rem 2rem; color: var(--muted);
+      grid-column: 1 / -1;
+    }
+    .empty .eico { font-size: 2.5rem; margin-bottom: 0.75rem; }
+    .empty h3 { font-family: 'Fraunces', serif; color: var(--ink); margin-bottom: 0.35rem; }
+    .empty p { font-size: 0.88rem; }
+
+    /* ── LOADING SCREEN ── */
+    #init-loading {
+      position: fixed; inset: 0; background: var(--ink);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem;
+      z-index: 9999; transition: opacity 0.4s;
+    }
+    #init-loading .logo { font-family: 'Fraunces', serif; font-size: 3.5rem; font-weight: 900; color: var(--paper); }
+    #init-loading .logo em { font-style: italic; color: var(--gold); }
+    .spinner {
+      width: 32px; height: 32px;
+      border: 2.5px solid rgba(255,255,255,0.1); border-top-color: var(--gold);
+      border-radius: 50%; animation: spin 0.75s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--ink); padding: 3rem 2.5rem 2rem;
+      border-top: 2px solid var(--gold); text-align: center;
+    }
+    footer .ft-name { font-family: 'Fraunces', serif; font-size: 2.2rem; font-weight: 900; color: var(--paper); }
+    footer .ft-name em { font-style: italic; color: var(--gold); }
+    footer .ft-sub { font-family: 'DM Sans', sans-serif; font-size: 0.72rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-top: 0.4rem; }
+    footer .ft-rule { width: 50px; height: 2px; background: var(--gold); margin: 1.5rem auto; }
+    footer .ft-credit { font-family: 'DM Sans', sans-serif; font-size: 0.78rem; color: #2e2e3a; line-height: 1.8; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      .two-col { grid-template-columns: 1fr; }
+      .historico { position: static; }
+      .news-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 640px) {
+      .portada-grid { grid-template-columns: 1fr; display: block; }
+      .pg-main { border-right: none; border-bottom: 1px solid var(--border); }
+      .pg-main h2 { font-size: 1.5rem; }
+      .news-grid { grid-template-columns: 1fr; }
+      .container { padding: 0 1.2rem; }
+      .nameplate { padding: 2rem 1.2rem; }
+      nav { padding: 0 1.2rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- INIT LOADING -->
+<div id="init-loading">
+  <div class="logo">La <em>Cima</em></div>
+  <div class="spinner"></div>
+</div>
+
+<!-- MASTHEAD -->
+<div class="masthead">
+  <div class="masthead-left" id="mdate">—</div>
+  <div class="masthead-right">Fe y Alegría · Medellín</div>
+</div>
+
+<!-- NAMEPLATE -->
+<div class="nameplate">
+  <div class="np-eyebrow">Periódico Escolar</div>
+  <div class="np-title">La <em>Cima</em></div>
+  <div class="np-school">Institución Educativa Fe y Alegría La Cima</div>
+  <div class="np-ornament"><span>✦ ✦ ✦</span></div>
+</div>
+
+<!-- NAV -->
+<nav>
+  <button class="nav-btn active" onclick="setFilter('',this)">Inicio</button>
+  <button class="nav-btn" onclick="setFilter('Académico',this)">Académico</button>
+  <button class="nav-btn" onclick="setFilter('Deportes',this)">Deportes</button>
+  <button class="nav-btn" onclick="setFilter('Cultura',this)">Cultura</button>
+  <button class="nav-btn" onclick="setFilter('Comunidad',this)">Comunidad</button>
+  <button class="nav-btn" onclick="setFilter('Tecnología',this)">Tecnología</button>
+  <button class="nav-btn" onclick="setFilter('Arte',this)">Arte</button>
+  <button class="nav-btn" onclick="setFilter('Eventos',this)">Eventos</button>
+  <div class="nav-spacer"></div>
+  <div class="nav-search">
+    <span class="si">🔍</span>
+    <input type="text" placeholder="Buscar…" oninput="setSearch(this.value)">
+  </div>
+</nav>
+
+<!-- TICKER -->
+<div class="ticker" id="ticker">
+  <span class="ticker-tag">Destacado</span>
+  <span class="ticker-text" id="ticker-text"></span>
+</div>
+
+<!-- MAIN -->
+<div class="container">
+
+  <!-- PORTADA -->
+  <section class="portada">
+    <div class="portada-grid" id="portada">
+      <div class="empty" style="grid-column:1/-1; padding:3rem"><div class="eico">⏳</div><h3>Cargando…</h3></div>
+    </div>
+  </section>
+
+  <!-- CONTENIDO + HISTÓRICO -->
+  <div class="two-col">
+    <div>
+      <div class="srule"><h2 id="section-title">Todas las noticias</h2></div>
+      <div class="news-grid" id="news-grid">
+        <div class="empty"><div class="eico">📰</div><h3>Cargando noticias…</h3></div>
+      </div>
+    </div>
+    <aside class="historico">
+      <div class="hist-title">📁 Histórico</div>
+      <div id="hist-list"><span style="color:var(--muted);font-size:0.85rem">Cargando…</span></div>
+    </aside>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="ft-name">La <em>Cima</em></div>
+  <div class="ft-sub">Periódico Escolar · Fe y Alegría</div>
+  <div class="ft-rule"></div>
+  <div class="ft-credit">
+    Institución Educativa Fe y Alegría La Cima · Medellín, Colombia<br>
+    Hecho con ❤️ por la comunidad educativa
+  </div>
+</footer>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="mhdr">
+      <button class="mclose" onclick="closeModal()">✕</button>
+      <div class="mhdr-cat" id="m-cat"></div>
+      <h2 id="m-title"></h2>
+      <div class="mhdr-meta" id="m-meta"></div>
+    </div>
+    <div class="mbody">
+      <div class="mresumen" id="m-resumen" style="display:none"></div>
+      <div class="mcuerpo" id="m-cuerpo"></div>
+    </div>
+    <div class="mfooter">
+      <div id="m-tags"></div>
+      <a class="drive-link" id="m-drive" href="#" target="_blank" style="display:none">📁 Ver materiales en Drive →</a>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════
+//  STATE
+// ═══════════════════════════════
+let ALL  = [];
+let HIST = {};
+let filterCat = '';
+let filterQ   = '';
+
+// ═══════════════════════════════
+//  INIT
+// ═══════════════════════════════
+const APPS_URL = 'https://script.google.com/macros/s/AKfycbwjLxGNP_llPDu9L0GpC-zYdgHbgDFzRXDXuTNcjkNYXoV_iQ2Xz24_YEFJdi7enxvcow/exec';
+
+window.addEventListener('load', () => {
+  const d = new Date();
+  document.getElementById('mdate').textContent =
+    d.toLocaleDateString('es-CO', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+  fetch(APPS_URL + '?action=noticiasPublicas')
+    .then(r => r.json()).then(onNewsLoaded)
+    .catch(() => onNewsLoaded([]));
+
+  fetch(APPS_URL + '?action=meses')
+    .then(r => r.json()).then(onMesesLoaded)
+    .catch(() => onMesesLoaded([]));
+});
+
+function onNewsLoaded(data) {
+  ALL = data || [];
+  hideLoading();
+  renderAll();
+  if (ALL.length) {
+    document.getElementById('ticker').classList.add('show');
+    document.getElementById('ticker-text').textContent = ALL[0].titulo;
+  }
+}
+
+function onMesesLoaded(meses) {
+  buildHistorico(meses);
+}
+
+function hideLoading() {
+  const el = document.getElementById('init-loading');
+  el.style.opacity = '0';
+  setTimeout(() => el.style.display = 'none', 400);
+}
+
+// ═══════════════════════════════
+//  RENDER
+// ═══════════════════════════════
+function filtered() {
+  let list = ALL;
+  if (filterCat) list = list.filter(n => n.categoria === filterCat);
+  if (filterQ)   list = list.filter(n =>
+    n.titulo.toLowerCase().includes(filterQ) ||
+    (n.resumen||'').toLowerCase().includes(filterQ) ||
+    (n.autor||'').toLowerCase().includes(filterQ)
+  );
+  return list;
+}
+
+function renderAll() {
+  renderPortada();
+  renderGrid();
+}
+
+function renderPortada() {
+  const news = filtered();
+  const el = document.getElementById('portada');
+  if (!news.length) {
+    el.innerHTML = `<div class="empty" style="grid-column:1/-1;padding:3rem"><div class="eico">📭</div><h3>Sin noticias publicadas aún</h3><p>Pronto habrá contenido.</p></div>`;
+    return;
+  }
+  const main = news[0];
+  const side = news.slice(1, 4);
+  el.innerHTML = `
+    <div class="pg-main" onclick="openModal(${esc(main)})">
+      <div class="cat-label">${main.categoria}</div>
+      <h2>${main.titulo}</h2>
+      <p class="excerpt">${main.resumen||''}</p>
+      <div class="meta"><span>📅 ${main.fecha}</span><span>✍️ ${main.autor}</span></div>
+      <div>${badges(main.tipos)}</div>
+    </div>
+    <div class="pg-side">
+      ${side.map(n => `
+        <div class="pg-item" onclick="openModal(${esc(n)})">
+          <div class="cat-label">${n.categoria}</div>
+          <h3>${n.titulo}</h3>
+          <div class="meta"><span>📅 ${n.fecha}</span></div>
+          <div>${badges(n.tipos)}</div>
+        </div>
+      `).join('')}
+    </div>`;
+}
+
+function renderGrid() {
+  const news = filtered().slice(1);
+  const el = document.getElementById('news-grid');
+  if (!news.length) {
+    el.innerHTML = `<div class="empty"><div class="eico">📭</div><h3>Sin más noticias</h3></div>`;
+    return;
+  }
+  el.innerHTML = news.map(n => `
+    <div class="ncard" onclick="openModal(${esc(n)})">
+      <div class="cat-label">${n.categoria}</div>
+      <h3>${n.titulo}</h3>
+      <p>${n.resumen||''}</p>
+      <div class="meta"><span>📅 ${n.fecha}</span><span>✍️ ${n.autor}</span></div>
+      <div>${badges(n.tipos)}</div>
+    </div>`).join('');
+}
+
+function badges(tipos) {
+  if (!tipos) return '';
+  return tipos.split(',').map(t => ({
+    texto:  `<span class="mbadge mb-texto">📝 Texto</span>`,
+    imagen: `<span class="mbadge mb-imagen">🖼️ Imagen</span>`,
+    video:  `<span class="mbadge mb-video">🎬 Video</span>`,
+  }[t.trim()]||'')).join('');
+}
+
+function esc(n) {
+  return JSON.stringify(n).replace(/"/g,'&quot;');
+}
+
+// ═══════════════════════════════
+//  HISTÓRICO
+// ═══════════════════════════════
+function buildHistorico(meses) {
+  HIST = {};
+  meses.forEach(m => { HIST[m] = ALL.filter(n => n.mes === m); });
+
+  const el = document.getElementById('hist-list');
+  if (!meses.length) { el.innerHTML = '<span style="color:var(--muted);font-size:0.85rem">Sin histórico disponible.</span>'; return; }
+
+  el.innerHTML = meses.map(mes => {
+    const cnt = (HIST[mes]||[]).length;
+    return `
+      <div class="hmes-item">
+        <button class="hmes-hdr" onclick="toggleHmes(this,'${mes}')">
+          <span>${mes}</span>
+          <span style="display:flex;align-items:center;gap:0.45rem">
+            <span class="cnt">${cnt} noticia${cnt!==1?'s':''}</span>
+            <span class="arr">▶</span>
+          </span>
+        </button>
+        <div class="hmes-list" id="hl-${mes}">
+          ${(HIST[mes]||[]).map(n => `
+            <button class="hmes-link" onclick="openModal(${esc(n)})">${n.titulo}</button>
+          `).join('') || '<span style="padding:0.3rem 0.7rem;font-size:0.78rem;color:var(--muted)">Sin noticias.</span>'}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function toggleHmes(btn, mes) {
+  btn.classList.toggle('open');
+  document.getElementById('hl-' + mes)?.classList.toggle('open');
+}
+
+// ═══════════════════════════════
+//  FILTROS
+// ═══════════════════════════════
+function setFilter(cat, btn) {
+  filterCat = cat;
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('section-title').textContent = cat || 'Todas las noticias';
+  renderAll();
+}
+
+function setSearch(q) {
+  filterQ = q.toLowerCase();
+  renderAll();
+}
+
+// ═══════════════════════════════
+//  MODAL
+// ═══════════════════════════════
+function openModal(n) {
+  document.getElementById('m-cat').textContent = n.categoria;
+  document.getElementById('m-title').textContent = n.titulo;
+  document.getElementById('m-meta').innerHTML =
+    `<span>📅 ${n.fecha}</span><span>📁 ${n.mes}</span><span>✍️ ${n.autor}</span>`;
+
+  const res = document.getElementById('m-resumen');
+  if (n.resumen) { res.textContent = n.resumen; res.style.display = 'block'; }
+  else res.style.display = 'none';
+
+  document.getElementById('m-cuerpo').textContent = 'Cargando contenido…';
+  fetch(APPS_URL + '?action=cuerpo&id=' + encodeURIComponent(n.id))
+    .then(r => r.json())
+    .then(c => { document.getElementById('m-cuerpo').textContent = c || 'Sin contenido disponible.'; })
+    .catch(() => { document.getElementById('m-cuerpo').textContent = n.resumen || 'Contenido no disponible.'; });
+
+  document.getElementById('m-tags').innerHTML = badges(n.tipos);
+  const dl = document.getElementById('m-drive');
+  if (n.folderUrl && n.folderUrl !== '#') { dl.href = n.folderUrl; dl.style.display = 'flex'; }
+  else dl.style.display = 'none';
+
+  document.getElementById('modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal(e) {
+  if (e && e.target !== document.getElementById('modal') && !e.target.closest('.mclose')) return;
+  document.getElementById('modal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(e); });
+</script>
+</body>
+</html>
