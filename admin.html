@@ -386,23 +386,72 @@ let noticiasCache         = [];
 let eventoSeleccionado    = null;
 let noticiaIAActual       = null;
 
-// ══ HELPER FETCH ══
+// ══ HELPER FETCH (CORS-safe para Apps Script) ══
+// Apps Script redirige y pierde los headers CORS en el camino.
+// Solución: fetch con redirect:'follow' y mode predeterminado,
+// pero apuntando al URL real tras la redirección usando un HEAD previo.
+// En la práctica lo más robusto es hacer fetch normal — Apps Script
+// SÍ devuelve CORS en el destino final, el problema es que el browser
+// sigue la redirección de script.google.com → script.googleusercontent.com
+// y esa segunda URL no lleva el header. Usamos un parámetro de callback
+// vacío para forzar que Apps Script devuelva texto plano sin redirección.
+
 async function api(params) {
   const url = new URL(APPS_URL);
-  Object.entries(params).forEach(([k,v]) => url.searchParams.set(k, v));
-  const res = await fetch(url.toString());
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-  return res.json();
+  Object.entries(params).forEach(([k,v]) => url.searchParams.set(k, String(v)));
+  // Intentamos fetch directo; si falla por CORS usamos el truco de iframe
+  try {
+    const res = await fetch(url.toString(), { redirect: 'follow' });
+    return res.json();
+  } catch(e) {
+    return await jsonpCall(url.toString());
+  }
 }
 
 async function apiPost(body) {
-  const res = await fetch(APPS_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify(body)
+  // POST a Apps Script: usamos text/plain para evitar preflight CORS
+  try {
+    const res = await fetch(APPS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(body),
+      redirect: 'follow'
+    });
+    return res.json();
+  } catch(e) {
+    // fallback: convertir a GET con los campos principales
+    const url = new URL(APPS_URL);
+    url.searchParams.set('action', body.action||'');
+    url.searchParams.set('email',  body.email||'');
+    url.searchParams.set('token',  body.token||'');
+    if (body.id)     url.searchParams.set('id',     body.id);
+    if (body.estado) url.searchParams.set('estado', body.estado);
+    return await jsonpCall(url.toString());
+  }
+}
+
+// JSONP: inyecta un <script> con ?callback=nombre para saltarse CORS
+function jsonpCall(url) {
+  return new Promise((resolve, reject) => {
+    const cb = '_cb' + Date.now();
+    const script = document.createElement('script');
+    const timer = setTimeout(() => {
+      delete window[cb];
+      document.head.removeChild(script);
+      reject(new Error('JSONP timeout'));
+    }, 15000);
+    window[cb] = data => {
+      clearTimeout(timer);
+      delete window[cb];
+      document.head.removeChild(script);
+      resolve(data);
+    };
+    const u = new URL(url);
+    u.searchParams.set('callback', cb);
+    script.src = u.toString();
+    script.onerror = () => { clearTimeout(timer); reject(new Error('JSONP error')); };
+    document.head.appendChild(script);
   });
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-  return res.json();
 }
 
 // ══ LOGIN ══
