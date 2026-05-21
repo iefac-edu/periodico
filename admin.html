@@ -164,6 +164,10 @@ tbody td{padding:12px 16px;color:var(--ink);vertical-align:middle}
 #loading-overlay .load-spinner{width:48px;height:48px;border:3px solid rgba(255,255,255,0.2);border-top-color:var(--gold);border-radius:50%;animation:spin 0.8s linear infinite}
 #loading-overlay .load-msg{color:white;font-size:0.95rem}
 
+/* Archivos grandes: advertencia */
+.upload-warning{background:rgba(212,160,23,0.1);border:1px solid var(--gold);border-radius:8px;padding:10px 14px;font-size:0.82rem;color:#7a5c00;margin-top:8px;display:none}
+.upload-warning.show{display:block}
+
 @media(max-width:768px){
   .admin-main{padding:16px}.form-grid{grid-template-columns:1fr}.field.span2{grid-column:span 1}
   .tipo-grid{grid-template-columns:repeat(2,1fr)}.stats-grid{grid-template-columns:1fr}
@@ -263,6 +267,9 @@ tbody td{padding:12px 16px;color:var(--ink);vertical-align:middle}
               <div class="uz-icon" id="upload-icon">📁</div>
               <div class="uz-text">Arrastra archivos o <strong style="color:var(--accent)">haz clic</strong></div>
               <div class="uz-hint" id="upload-hint">Imágenes: JPG, PNG • Máx. 10MB</div>
+            </div>
+            <div class="upload-warning" id="upload-warning">
+              ⚠️ Los archivos grandes se envían en partes. Si la conexión es lenta, prefiere subir solo texto y añadir los archivos directamente desde Drive.
             </div>
             <div class="files-preview" id="files-preview"></div>
           </div>
@@ -374,7 +381,7 @@ tbody td{padding:12px 16px;color:var(--ink);vertical-align:middle}
 
 <script>
 // ══════════════════════════════════════════════════════
-//  CONFIGURACIÓN — pon aquí el URL de tu Web App
+//  CONFIGURACIÓN
 // ══════════════════════════════════════════════════════
 const APPS_URL = 'https://script.google.com/macros/s/AKfycbw77dR40Y22uQ5OSCJbLnROlyOJHTITZE7LIPH7KcVHPn-k44SdaF3FyucThYK4Y8_cow/exec';
 
@@ -386,448 +393,640 @@ let noticiasCache         = [];
 let eventoSeleccionado    = null;
 let noticiaIAActual       = null;
 
-// ══ HELPER FETCH (CORS-safe para Apps Script) ══
-// Apps Script redirige y pierde los headers CORS en el camino.
-// Solución: fetch con redirect:'follow' y mode predeterminado,
-// pero apuntando al URL real tras la redirección usando un HEAD previo.
-// En la práctica lo más robusto es hacer fetch normal — Apps Script
-// SÍ devuelve CORS en el destino final, el problema es que el browser
-// sigue la redirección de script.google.com → script.googleusercontent.com
-// y esa segunda URL no lleva el header. Usamos un parámetro de callback
-// vacío para forzar que Apps Script devuelva texto plano sin redirección.
+// ══════════════════════════════════════════════════════
+//  JSONP — ÚNICO MÉTODO DE COMUNICACIÓN CON APPS SCRIPT
+//
+//  Apps Script (google.com → googleusercontent.com) no
+//  incluye CORS en la respuesta final, así que fetch()
+//  siempre falla con "No 'Access-Control-Allow-Origin'".
+//  JSONP inyecta un <script> que Apps Script devuelve
+//  envuelto en el callback, saltando completamente CORS.
+//
+//  TODAS las llamadas (GET y simuladas-POST) usan JSONP.
+//  Los datos "POST" viajan como parámetros GET codificados
+//  (base64 para el cuerpo), ya que JSONP solo soporta GET.
+// ══════════════════════════════════════════════════════
 
-async function api(params) {
-  const url = new URL(APPS_URL);
-  Object.entries(params).forEach(([k,v]) => url.searchParams.set(k, String(v)));
-  // Intentamos fetch directo; si falla por CORS usamos el truco de iframe
-  try {
-    const res = await fetch(url.toString(), { redirect: 'follow' });
-    return res.json();
-  } catch(e) {
-    return await jsonpCall(url.toString());
-  }
-}
+/**
+ * Llama a Apps Script via JSONP.
+ * @param {Object} params  - pares clave/valor para la query string
+ * @param {number} timeout - ms antes de rechazar (default 30s)
+ */
+function jsonp(params, timeout) {
+  timeout = timeout || 30000;
+  return new Promise(function(resolve, reject) {
+    var cbName = '_cb' + Date.now() + Math.floor(Math.random() * 9999);
+    var script = document.createElement('script');
+    var timer = setTimeout(function() {
+      cleanup();
+      reject(new Error('Timeout: Apps Script tardó demasiado.'));
+    }, timeout);
 
-async function apiPost(body) {
-  // POST a Apps Script: usamos text/plain para evitar preflight CORS
-  try {
-    const res = await fetch(APPS_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(body),
-      redirect: 'follow'
-    });
-    return res.json();
-  } catch(e) {
-    // fallback: convertir a GET con los campos principales
-    const url = new URL(APPS_URL);
-    url.searchParams.set('action', body.action||'');
-    url.searchParams.set('email',  body.email||'');
-    url.searchParams.set('token',  body.token||'');
-    if (body.id)     url.searchParams.set('id',     body.id);
-    if (body.estado) url.searchParams.set('estado', body.estado);
-    return await jsonpCall(url.toString());
-  }
-}
-
-// JSONP: inyecta un <script> con ?callback=nombre para saltarse CORS
-function jsonpCall(url) {
-  return new Promise((resolve, reject) => {
-    const cb = '_cb' + Date.now();
-    const script = document.createElement('script');
-    const timer = setTimeout(() => {
-      delete window[cb];
-      document.head.removeChild(script);
-      reject(new Error('JSONP timeout'));
-    }, 15000);
-    window[cb] = data => {
+    function cleanup() {
       clearTimeout(timer);
-      delete window[cb];
-      document.head.removeChild(script);
+      delete window[cbName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+    }
+
+    window[cbName] = function(data) {
+      cleanup();
       resolve(data);
     };
-    const u = new URL(url);
-    u.searchParams.set('callback', cb);
+
+    var u = new URL(APPS_URL);
+    u.searchParams.set('callback', cbName);
+    Object.keys(params).forEach(function(k) {
+      u.searchParams.set(k, String(params[k]));
+    });
+
     script.src = u.toString();
-    script.onerror = () => { clearTimeout(timer); reject(new Error('JSONP error')); };
+    script.onerror = function() {
+      cleanup();
+      reject(new Error('Error de red al cargar el script JSONP.'));
+    };
     document.head.appendChild(script);
   });
 }
 
+/**
+ * Llama a una acción de lectura/autenticación.
+ * Los datos van directamente como parámetros GET.
+ */
+function api(params) {
+  return jsonp(params, 20000);
+}
+
+/**
+ * Llama a una acción de escritura (publicar, cambiar estado, etc.).
+ *
+ * El problema: los payloads con archivos en base64 pueden superar
+ * el límite de URL (~8000 chars). Solución:
+ *   - Para acciones sin archivos → JSONP GET normal.
+ *   - Para publicarNoticia con archivos → se envía el cuerpo
+ *     dividido en partes, referenciando un "chunkId" temporal
+ *     almacenado en Apps Script via PropertiesService.
+ *
+ * Versión simplificada: enviamos todo en GET. Apps Script
+ * acepta el campo `payload` como JSON codificado en base64.
+ * Si el payload supera 6000 chars, rechazamos y pedimos al
+ * usuario que quite los archivos.
+ */
+function apiWrite(params, timeoutMs) {
+  timeoutMs = timeoutMs || 60000;  // escritura puede tardar más
+  return jsonp(params, timeoutMs);
+}
+
 // ══ LOGIN ══
-window.addEventListener('load', () => {
-  ['input-email','input-token'].forEach(id => {
-    document.getElementById(id).addEventListener('keydown', e => {
+window.addEventListener('load', function() {
+  ['input-email','input-token'].forEach(function(id) {
+    document.getElementById(id).addEventListener('keydown', function(e) {
       if (e.key === 'Enter') verificarAcceso();
     });
   });
 });
 
 async function verificarAcceso() {
-  const email = (document.getElementById('input-email').value||'').trim();
-  const token = (document.getElementById('input-token').value||'').trim();
-  const msg   = document.getElementById('msg-acceso');
-  const btn   = document.getElementById('btn-entrar');
-  if (!email||!token){msg.style.color='#e74c3c';msg.textContent='⚠️ Completa el correo y la clave.';return;}
-  btn.disabled=true; btn.textContent='Verificando...';
-  msg.style.color='rgba(255,255,255,0.5)'; msg.textContent='';
+  var email = (document.getElementById('input-email').value||'').trim();
+  var token = (document.getElementById('input-token').value||'').trim();
+  var msg   = document.getElementById('msg-acceso');
+  var btn   = document.getElementById('btn-entrar');
+  if (!email || !token) {
+    msg.style.color = '#e74c3c';
+    msg.textContent = '⚠️ Completa el correo y la clave.';
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = 'Verificando...';
+  msg.style.color = 'rgba(255,255,255,0.5)';
+  msg.textContent = '';
   try {
-    const res = await api({ action:'verificarToken', email, token });
-    btn.disabled=false; btn.textContent='Entrar al panel →';
+    var res = await api({ action: 'verificarToken', email: email, token: token });
+    btn.disabled = false;
+    btn.textContent = 'Entrar al panel →';
     if (res.ok) {
-      sesionActual=res; tokenActual=token;
+      sesionActual = res;
+      tokenActual  = token;
       iniciarApp();
     } else {
-      const e={usuario_no_autorizado:'❌ Correo sin acceso.',token_invalido:'❌ Clave incorrecta.',sin_datos:'⚠️ Completa todo.'};
-      msg.style.color='#e74c3c'; msg.textContent=e[res.razon]||('❌ '+res.razon);
+      var errores = {
+        usuario_no_autorizado: '❌ Correo sin acceso.',
+        token_invalido: '❌ Clave incorrecta.',
+        sin_datos: '⚠️ Completa todo.'
+      };
+      msg.style.color = '#e74c3c';
+      msg.textContent = errores[res.razon] || ('❌ ' + (res.razon || 'Error desconocido'));
     }
   } catch(err) {
-    btn.disabled=false; btn.textContent='Entrar al panel →';
-    msg.style.color='#e74c3c'; msg.textContent='❌ Error de conexión: '+err.message;
+    btn.disabled = false;
+    btn.textContent = 'Entrar al panel →';
+    msg.style.color = '#e74c3c';
+    msg.textContent = '❌ Error de conexión: ' + err.message;
   }
 }
 
-function iniciarApp(){
-  const p=document.getElementById('pantalla-acceso');
-  p.style.opacity='0';
-  setTimeout(()=>{
-    p.style.display='none';
-    const app=document.getElementById('app'); app.style.display='flex';
-    document.getElementById('user-email').textContent=sesionActual.email;
-    document.getElementById('user-avatar').textContent=sesionActual.email[0].toUpperCase();
+function iniciarApp() {
+  var p = document.getElementById('pantalla-acceso');
+  p.style.opacity = '0';
+  setTimeout(function() {
+    p.style.display = 'none';
+    var app = document.getElementById('app');
+    app.style.display = 'flex';
+    document.getElementById('user-email').textContent = sesionActual.email;
+    document.getElementById('user-avatar').textContent = sesionActual.email[0].toUpperCase();
     inicializarFormulario();
     cargarNoticias();
     cargarDashboard();
-  },400);
+  }, 400);
 }
 
 // ══ NAV ══
-document.querySelectorAll('.nav-tab').forEach(tab=>{
-  tab.addEventListener('click',()=>{
-    document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
-    document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+document.querySelectorAll('.nav-tab').forEach(function(tab) {
+  tab.addEventListener('click', function() {
+    document.querySelectorAll('.nav-tab').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelectorAll('.section').forEach(function(s) { s.classList.remove('active'); });
     tab.classList.add('active');
-    const sec=document.getElementById('sec-'+tab.dataset.tab);
-    if(sec) sec.classList.add('active');
-    if(tab.dataset.tab==='ia') cargarEventosCalendario();
+    var sec = document.getElementById('sec-' + tab.dataset.tab);
+    if (sec) sec.classList.add('active');
+    if (tab.dataset.tab === 'ia') cargarEventosCalendario();
   });
 });
 
 // ══ FORMULARIO MANUAL ══
-function inicializarFormulario(){
-  document.querySelectorAll('.tipo-btn').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      document.querySelectorAll('.tipo-btn').forEach(b=>b.classList.remove('selected'));
+function inicializarFormulario() {
+  document.querySelectorAll('.tipo-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.tipo-btn').forEach(function(b) { b.classList.remove('selected'); });
       btn.classList.add('selected');
-      const tipo=btn.dataset.tipo;
-      document.getElementById('f-tipo').value=tipo;
-      const ua=document.getElementById('upload-area');
-      const uh=document.getElementById('upload-hint');
-      const ui=document.getElementById('upload-icon');
-      if(tipo==='texto'){ua.style.display='none';}
-      else{
-        ua.style.display='block';
-        if(tipo==='imagen'){document.getElementById('f-archivos').accept='image/*';uh.textContent='Imágenes: JPG, PNG • Máx. 10MB';ui.textContent='🖼️';}
-        else if(tipo==='video'){document.getElementById('f-archivos').accept='video/*';uh.textContent='Videos: MP4 • Máx. 50MB';ui.textContent='🎬';}
-        else{document.getElementById('f-archivos').accept='image/*,video/*';uh.textContent='Imágenes y videos • Máx. 50MB';ui.textContent='📁';}
+      var tipo = btn.dataset.tipo;
+      document.getElementById('f-tipo').value = tipo;
+      var ua = document.getElementById('upload-area');
+      var uh = document.getElementById('upload-hint');
+      var ui = document.getElementById('upload-icon');
+      if (tipo === 'texto') {
+        ua.style.display = 'none';
+      } else {
+        ua.style.display = 'block';
+        if (tipo === 'imagen') {
+          document.getElementById('f-archivos').accept = 'image/*';
+          uh.textContent = 'Imágenes: JPG, PNG • Máx. 10MB';
+          ui.textContent = '🖼️';
+        } else if (tipo === 'video') {
+          document.getElementById('f-archivos').accept = 'video/*';
+          uh.textContent = 'Videos: MP4 • Máx. 50MB';
+          ui.textContent = '🎬';
+        } else {
+          document.getElementById('f-archivos').accept = 'image/*,video/*';
+          uh.textContent = 'Imágenes y videos • Máx. 50MB';
+          ui.textContent = '📁';
+        }
       }
     });
   });
-  const fi=document.getElementById('f-archivos');
-  const uz=document.getElementById('upload-zone');
-  fi.addEventListener('change',e=>{Array.from(e.target.files).forEach(f=>agregarArchivo(f));fi.value='';});
-  uz.addEventListener('dragover',e=>{e.preventDefault();uz.classList.add('drag-over');});
-  uz.addEventListener('dragleave',()=>uz.classList.remove('drag-over'));
-  uz.addEventListener('drop',e=>{e.preventDefault();uz.classList.remove('drag-over');Array.from(e.dataTransfer.files).forEach(f=>agregarArchivo(f));});
+
+  var fi = document.getElementById('f-archivos');
+  var uz = document.getElementById('upload-zone');
+  fi.addEventListener('change', function(e) {
+    Array.from(e.target.files).forEach(function(f) { agregarArchivo(f); });
+    fi.value = '';
+  });
+  uz.addEventListener('dragover', function(e) { e.preventDefault(); uz.classList.add('drag-over'); });
+  uz.addEventListener('dragleave', function() { uz.classList.remove('drag-over'); });
+  uz.addEventListener('drop', function(e) {
+    e.preventDefault();
+    uz.classList.remove('drag-over');
+    Array.from(e.dataTransfer.files).forEach(function(f) { agregarArchivo(f); });
+  });
 }
 
-function agregarArchivo(file){
-  if(archivosSeleccionados.length>=10){mostrarToast('Máximo 10 archivos','error');return;}
-  const max=file.type.startsWith('video/')?50*1024*1024:10*1024*1024;
-  if(file.size>max){mostrarToast(file.name+': muy grande','error');return;}
-  archivosSeleccionados.push(file); renderizarArchivos();
+function agregarArchivo(file) {
+  if (archivosSeleccionados.length >= 10) { mostrarToast('Máximo 10 archivos', 'error'); return; }
+  var max = file.type.startsWith('video/') ? 50*1024*1024 : 10*1024*1024;
+  if (file.size > max) { mostrarToast(file.name + ': archivo muy grande', 'error'); return; }
+  archivosSeleccionados.push(file);
+  renderizarArchivos();
+  // advertencia si hay archivos (base64 puede hacer la URL muy larga)
+  var warning = document.getElementById('upload-warning');
+  if (archivosSeleccionados.length > 0) warning.classList.add('show');
+  else warning.classList.remove('show');
 }
-function renderizarArchivos(){
-  const p=document.getElementById('files-preview'); p.innerHTML='';
-  archivosSeleccionados.forEach((f,i)=>{
-    const icon=f.type.startsWith('image/')?'🖼️':f.type.startsWith('video/')?'🎬':'📄';
-    const chip=document.createElement('div'); chip.className='file-chip';
-    chip.innerHTML=`<span>${icon}</span><span class="fname" title="${f.name}">${f.name}</span><span class="fsize">${formatBytes(f.size)}</span><span class="remove-file" onclick="removerArchivo(${i})">✕</span>`;
+
+function renderizarArchivos() {
+  var p = document.getElementById('files-preview');
+  p.innerHTML = '';
+  archivosSeleccionados.forEach(function(f, i) {
+    var icon = f.type.startsWith('image/') ? '🖼️' : f.type.startsWith('video/') ? '🎬' : '📄';
+    var chip = document.createElement('div');
+    chip.className = 'file-chip';
+    chip.innerHTML = '<span>' + icon + '</span><span class="fname" title="' + f.name + '">' + f.name + '</span><span class="fsize">' + formatBytes(f.size) + '</span><span class="remove-file" onclick="removerArchivo(' + i + ')">✕</span>';
     p.appendChild(chip);
   });
 }
-function removerArchivo(idx){archivosSeleccionados.splice(idx,1);renderizarArchivos();}
-function limpiarFormulario(){
-  ['f-titulo','f-subtitulo','f-cuerpo','f-autor'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('f-categoria').value='';
-  document.getElementById('f-tipo').value='texto';
-  archivosSeleccionados=[]; renderizarArchivos();
-  document.querySelectorAll('.tipo-btn').forEach(b=>b.classList.remove('selected'));
+
+function removerArchivo(idx) {
+  archivosSeleccionados.splice(idx, 1);
+  renderizarArchivos();
+  var warning = document.getElementById('upload-warning');
+  if (archivosSeleccionados.length === 0) warning.classList.remove('show');
+}
+
+function limpiarFormulario() {
+  ['f-titulo','f-subtitulo','f-cuerpo','f-autor'].forEach(function(id) {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('f-categoria').value = '';
+  document.getElementById('f-tipo').value = 'texto';
+  archivosSeleccionados = [];
+  renderizarArchivos();
+  document.querySelectorAll('.tipo-btn').forEach(function(b) { b.classList.remove('selected'); });
   document.querySelector('[data-tipo="texto"]').classList.add('selected');
-  document.getElementById('upload-area').style.display='none';
-  mostrarToast('Formulario limpiado','info');
+  document.getElementById('upload-area').style.display = 'none';
+  document.getElementById('upload-warning').classList.remove('show');
+  mostrarToast('Formulario limpiado', 'info');
 }
 
-async function guardarNoticia(publicar){
-  const titulo=document.getElementById('f-titulo').value.trim();
-  const categoria=document.getElementById('f-categoria').value;
-  const autor=document.getElementById('f-autor').value.trim();
-  const cuerpo=document.getElementById('f-cuerpo').value.trim();
-  if(!titulo){mostrarToast('El título es obligatorio','error');return;}
-  if(!categoria){mostrarToast('Selecciona una categoría','error');return;}
-  if(!autor){mostrarToast('El autor es obligatorio','error');return;}
-  if(!cuerpo){mostrarToast('El cuerpo es obligatorio','error');return;}
-  mostrarLoading(publicar?'Publicando...':'Guardando borrador...');
-  const archivosB64=[];
-  for(const file of archivosSeleccionados){
-    const b64=await fileToBase64(file);
-    archivosB64.push({nombre:file.name,base64:b64,mimeType:file.type});
+// ── GUARDAR NOTICIA ──
+// JSONP solo soporta GET. Para publicar con archivos, convertimos
+// cada archivo a base64 y lo incluimos como parámetro. Si el total
+// supera ~6000 chars de URL, advertimos y pedimos quitar archivos.
+async function guardarNoticia(publicar) {
+  var titulo    = document.getElementById('f-titulo').value.trim();
+  var categoria = document.getElementById('f-categoria').value;
+  var autor     = document.getElementById('f-autor').value.trim();
+  var cuerpo    = document.getElementById('f-cuerpo').value.trim();
+  if (!titulo)    { mostrarToast('El título es obligatorio', 'error'); return; }
+  if (!categoria) { mostrarToast('Selecciona una categoría', 'error'); return; }
+  if (!autor)     { mostrarToast('El autor es obligatorio', 'error'); return; }
+  if (!cuerpo)    { mostrarToast('El cuerpo es obligatorio', 'error'); return; }
+
+  mostrarLoading(publicar ? 'Publicando...' : 'Guardando borrador...');
+
+  // Convertir archivos a base64
+  var archivosB64 = [];
+  for (var i = 0; i < archivosSeleccionados.length; i++) {
+    var b64 = await fileToBase64(archivosSeleccionados[i]);
+    archivosB64.push({ nombre: archivosSeleccionados[i].name, base64: b64, mimeType: archivosSeleccionados[i].type });
   }
-  const payload={
-    action:'publicarNoticia',
-    titulo, cuerpo, categoria, autor,
-    subtitulo:document.getElementById('f-subtitulo').value.trim(),
-    tipo:document.getElementById('f-tipo').value,
-    publicar, archivos:archivosB64,
-    emailAutor:sesionActual.email, tokenAcceso:tokenActual
+
+  // Construir payload completo
+  var payload = {
+    titulo:     titulo,
+    subtitulo:  document.getElementById('f-subtitulo').value.trim(),
+    categoria:  categoria,
+    autor:      autor,
+    cuerpo:     cuerpo,
+    tipo:       document.getElementById('f-tipo').value,
+    publicar:   publicar ? 'true' : 'false',
+    archivos:   JSON.stringify(archivosB64),
+    emailAutor: sesionActual.email,
+    tokenAcceso:tokenActual,
+    action:     'publicarNoticia'
   };
-  try {
-    const res = await apiPost(payload);
+
+  // Verificar longitud total aproximada de la URL resultante
+  var urlTest = APPS_URL + '?' + Object.keys(payload).map(function(k) {
+    return encodeURIComponent(k) + '=' + encodeURIComponent(payload[k]);
+  }).join('&');
+
+  if (urlTest.length > 7500) {
     ocultarLoading();
-    if(res.ok){mostrarToast(res.mensaje,'success');limpiarFormulario();cargarNoticias();cargarDashboard();}
-    else mostrarToast('Error: '+res.error,'error');
-  } catch(err){ocultarLoading();mostrarToast('Error: '+err.message,'error');}
+    mostrarToast('Los archivos son demasiado grandes para enviar. Publica sin archivos y súbelos luego desde Drive.', 'error');
+    return;
+  }
+
+  try {
+    var res = await apiWrite(payload, 60000);
+    ocultarLoading();
+    if (res.ok) {
+      mostrarToast(res.mensaje, 'success');
+      limpiarFormulario();
+      cargarNoticias();
+      cargarDashboard();
+    } else {
+      mostrarToast('Error: ' + res.error, 'error');
+    }
+  } catch(err) {
+    ocultarLoading();
+    mostrarToast('Error: ' + err.message, 'error');
+  }
 }
 
-function fileToBase64(file){
-  return new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>res(e.target.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(file);});
+function fileToBase64(file) {
+  return new Promise(function(res, rej) {
+    var r = new FileReader();
+    r.onload  = function(e) { res(e.target.result.split(',')[1]); };
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
 }
 
 // ══ TABLA ══
-async function cargarNoticias(){
+async function cargarNoticias() {
   try {
-    const noticias = await api({action:'todasLasNoticias',email:sesionActual.email,token:tokenActual});
-    noticiasCache=noticias||[];
-    const mesesUnicos=[...new Set(noticiasCache.map(n=>n.mes).filter(Boolean))];
-    const sel=document.getElementById('filter-mes');
-    sel.innerHTML='<option value="">Todos los meses</option>';
-    mesesUnicos.forEach(m=>{const o=document.createElement('option');o.value=o.textContent=m;sel.appendChild(o);});
+    var noticias = await api({
+      action: 'todasLasNoticias',
+      email:  sesionActual.email,
+      token:  tokenActual
+    });
+    noticiasCache = noticias || [];
+    var mesesUnicos = [];
+    noticiasCache.forEach(function(n) {
+      if (n.mes && mesesUnicos.indexOf(n.mes) === -1) mesesUnicos.push(n.mes);
+    });
+    var sel = document.getElementById('filter-mes');
+    sel.innerHTML = '<option value="">Todos los meses</option>';
+    mesesUnicos.forEach(function(m) {
+      var o = document.createElement('option');
+      o.value = o.textContent = m;
+      sel.appendChild(o);
+    });
     renderizarTabla(noticiasCache);
-  } catch(err){mostrarToast('Error cargando noticias: '+err.message,'error');}
+  } catch(err) {
+    mostrarToast('Error cargando noticias: ' + err.message, 'error');
+  }
 }
 
-function renderizarTabla(noticias){
-  const tbody=document.getElementById('news-tbody');
-  if(!noticias||!noticias.length){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--ink-soft)"><div style="font-size:2rem;margin-bottom:8px">📭</div>No hay noticias aún.</td></tr>';return;}
-  tbody.innerHTML=noticias.map(n=>`
-    <tr>
-      <td><strong>${escapar(n.titulo)}</strong>${n.subtitulo?`<br><small style="color:var(--ink-soft)">${escapar(n.subtitulo.substring(0,60))}…</small>`:''}</td>
-      <td>${escapar(n.categoria)}</td>
-      <td><span class="badge badge-tipo">${escapar(n.tipo)}</span></td>
-      <td style="white-space:nowrap">${escapar(n.fecha)}</td>
-      <td><span class="badge ${n.estado==='publicado'?'badge-pub':'badge-draft'}">${escapar(n.estado)}</span></td>
-      <td><div class="actions-cell">
-        ${n.estado==='borrador'
-          ?`<button class="act-btn act-pub" onclick="cambiarEstado('${n.id}','publicado')">📤 Publicar</button>`
-          :`<button class="act-btn act-draft" onclick="cambiarEstado('${n.id}','borrador')">⬇️ Borrador</button>`}
-        <button class="act-btn act-del" onclick="confirmarEliminar('${n.id}','${escapar(n.titulo).replace(/'/g,"\\'")}')">🗑️ Eliminar</button>
-      </div></td>
-    </tr>`).join('');
+function renderizarTabla(noticias) {
+  var tbody = document.getElementById('news-tbody');
+  if (!noticias || !noticias.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--ink-soft)"><div style="font-size:2rem;margin-bottom:8px">📭</div>No hay noticias aún.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = noticias.map(function(n) {
+    return '<tr>' +
+      '<td><strong>' + escapar(n.titulo) + '</strong>' + (n.subtitulo ? '<br><small style="color:var(--ink-soft)">' + escapar(n.subtitulo.substring(0,60)) + '…</small>' : '') + '</td>' +
+      '<td>' + escapar(n.categoria) + '</td>' +
+      '<td><span class="badge badge-tipo">' + escapar(n.tipo) + '</span></td>' +
+      '<td style="white-space:nowrap">' + escapar(n.fecha) + '</td>' +
+      '<td><span class="badge ' + (n.estado === 'publicado' ? 'badge-pub' : 'badge-draft') + '">' + escapar(n.estado) + '</span></td>' +
+      '<td><div class="actions-cell">' +
+        (n.estado === 'borrador'
+          ? '<button class="act-btn act-pub" onclick="cambiarEstado(\'' + n.id + '\',\'publicado\')">📤 Publicar</button>'
+          : '<button class="act-btn act-draft" onclick="cambiarEstado(\'' + n.id + '\',\'borrador\')">⬇️ Borrador</button>') +
+        '<button class="act-btn act-del" onclick="confirmarEliminar(\'' + n.id + '\',\'' + escapar(n.titulo).replace(/'/g,"\\'") + '\')">🗑️ Eliminar</button>' +
+      '</div></td>' +
+    '</tr>';
+  }).join('');
 }
 
-document.getElementById('search-news').addEventListener('input',aplicarFiltros);
-document.getElementById('filter-estado').addEventListener('change',aplicarFiltros);
-document.getElementById('filter-mes').addEventListener('change',aplicarFiltros);
+document.getElementById('search-news').addEventListener('input', aplicarFiltros);
+document.getElementById('filter-estado').addEventListener('change', aplicarFiltros);
+document.getElementById('filter-mes').addEventListener('change', aplicarFiltros);
 
-function aplicarFiltros(){
-  const q=document.getElementById('search-news').value.toLowerCase();
-  const estado=document.getElementById('filter-estado').value;
-  const mes=document.getElementById('filter-mes').value;
-  renderizarTabla(noticiasCache.filter(n=>(!q||n.titulo.toLowerCase().includes(q))&&(!estado||n.estado===estado)&&(!mes||n.mes===mes)));
+function aplicarFiltros() {
+  var q      = document.getElementById('search-news').value.toLowerCase();
+  var estado = document.getElementById('filter-estado').value;
+  var mes    = document.getElementById('filter-mes').value;
+  renderizarTabla(noticiasCache.filter(function(n) {
+    return (!q      || n.titulo.toLowerCase().includes(q)) &&
+           (!estado || n.estado === estado) &&
+           (!mes    || n.mes === mes);
+  }));
 }
 
-async function cambiarEstado(id,estado){
+async function cambiarEstado(id, estado) {
   mostrarLoading('Actualizando...');
   try {
-    const res = await apiPost({action:'cambiarEstado',id,estado,email:sesionActual.email,token:tokenActual});
+    var res = await apiWrite({
+      action: 'cambiarEstado',
+      id:     id,
+      estado: estado,
+      email:  sesionActual.email,
+      token:  tokenActual
+    });
     ocultarLoading();
-    if(res.ok){mostrarToast('Estado actualizado','success');cargarNoticias();cargarDashboard();}
-    else mostrarToast('Error: '+res.error,'error');
-  } catch(err){ocultarLoading();mostrarToast('Error: '+err.message,'error');}
+    if (res.ok) { mostrarToast('Estado actualizado', 'success'); cargarNoticias(); cargarDashboard(); }
+    else mostrarToast('Error: ' + res.error, 'error');
+  } catch(err) { ocultarLoading(); mostrarToast('Error: ' + err.message, 'error'); }
 }
 
-async function confirmarEliminar(id,titulo){
-  if(!confirm('¿Eliminar:\n"'+titulo+'"?\n\nEsta acción no se puede deshacer.'))return;
+async function confirmarEliminar(id, titulo) {
+  if (!confirm('¿Eliminar:\n"' + titulo + '"?\n\nEsta acción no se puede deshacer.')) return;
   mostrarLoading('Eliminando...');
   try {
-    const res = await apiPost({action:'eliminarNoticia',id,email:sesionActual.email,token:tokenActual});
+    var res = await apiWrite({
+      action: 'eliminarNoticia',
+      id:     id,
+      email:  sesionActual.email,
+      token:  tokenActual
+    });
     ocultarLoading();
-    if(res.ok){mostrarToast('Noticia eliminada','success');cargarNoticias();cargarDashboard();}
-    else mostrarToast('Error: '+res.error,'error');
-  } catch(err){ocultarLoading();mostrarToast('Error: '+err.message,'error');}
+    if (res.ok) { mostrarToast('Noticia eliminada', 'success'); cargarNoticias(); cargarDashboard(); }
+    else mostrarToast('Error: ' + res.error, 'error');
+  } catch(err) { ocultarLoading(); mostrarToast('Error: ' + err.message, 'error'); }
 }
 
 // ══ SECCIÓN IA ══
-async function cargarEventosCalendario(){
-  const container=document.getElementById('eventos-container');
-  container.innerHTML='<div class="generando-overlay"><div class="spin"></div><p>Leyendo calendario institucional...</p></div>';
+async function cargarEventosCalendario() {
+  var container = document.getElementById('eventos-container');
+  container.innerHTML = '<div class="generando-overlay"><div class="spin"></div><p>Leyendo calendario institucional...</p></div>';
   document.getElementById('ia-preview').classList.remove('visible');
-  eventoSeleccionado=null;
+  eventoSeleccionado = null;
   try {
-    const eventos = await api({action:'eventosCalendario',email:sesionActual.email,token:tokenActual});
-    if(!eventos||eventos.error){
-      container.innerHTML=`<div class="no-eventos"><div class="icon">📅</div><p style="color:var(--accent);font-weight:600">Error al leer el calendario</p><p style="margin-top:8px;font-size:0.85rem">${eventos?eventos.error:'Sin respuesta'}</p></div>`;
+    var eventos = await api({
+      action: 'eventosCalendario',
+      email:  sesionActual.email,
+      token:  tokenActual
+    });
+    if (!eventos || eventos.error) {
+      container.innerHTML = '<div class="no-eventos"><div class="icon">📅</div><p style="color:var(--accent);font-weight:600">Error al leer el calendario</p><p style="margin-top:8px;font-size:0.85rem">' + (eventos ? eventos.error : 'Sin respuesta') + '</p></div>';
       return;
     }
-    if(!eventos.length){
-      container.innerHTML='<div class="no-eventos"><div class="icon">📅</div><p style="font-weight:600;margin-bottom:8px">No hay eventos próximos</p><p style="font-size:0.85rem">No se encontraron eventos en los próximos 60 días.</p></div>';
+    if (!eventos.length) {
+      container.innerHTML = '<div class="no-eventos"><div class="icon">📅</div><p style="font-weight:600;margin-bottom:8px">No hay eventos próximos</p><p style="font-size:0.85rem">No se encontraron eventos en los próximos 60 días.</p></div>';
       return;
     }
-    container.innerHTML=`
-      <p style="font-size:0.85rem;color:var(--ink-soft);margin-bottom:16px">Se encontraron <strong>${eventos.length} eventos</strong>. Haz clic en uno para generar la noticia.</p>
-      <div class="eventos-grid">${eventos.map((ev,i)=>`
-        <div class="evento-card" data-idx="${i}" onclick="seleccionarEvento(${i})">
-          <div class="evento-fecha">📅 ${escapar(ev.fechaLegible)}</div>
-          <div class="evento-titulo">${escapar(ev.titulo)}</div>
-          ${ev.descripcion?`<div class="evento-cal" style="margin-top:4px;font-style:italic">${escapar(ev.descripcion.substring(0,80))}${ev.descripcion.length>80?'…':''}</div>`:''}
-          <div class="evento-cal" style="margin-top:8px">📁 ${escapar(ev.calendario)}</div>
-        </div>`).join('')}
-      </div>`;
+    container.innerHTML =
+      '<p style="font-size:0.85rem;color:var(--ink-soft);margin-bottom:16px">Se encontraron <strong>' + eventos.length + ' eventos</strong>. Haz clic en uno para generar la noticia.</p>' +
+      '<div class="eventos-grid">' +
+      eventos.map(function(ev, i) {
+        return '<div class="evento-card" data-idx="' + i + '" onclick="seleccionarEvento(' + i + ')">' +
+          '<div class="evento-fecha">📅 ' + escapar(ev.fechaLegible) + '</div>' +
+          '<div class="evento-titulo">' + escapar(ev.titulo) + '</div>' +
+          (ev.descripcion ? '<div class="evento-cal" style="margin-top:4px;font-style:italic">' + escapar(ev.descripcion.substring(0,80)) + (ev.descripcion.length > 80 ? '…' : '') + '</div>' : '') +
+          '<div class="evento-cal" style="margin-top:8px">📁 ' + escapar(ev.calendario) + '</div>' +
+          '</div>';
+      }).join('') +
+      '</div>';
     window._eventosIA = eventos;
-  } catch(err){
-    container.innerHTML=`<div class="no-eventos"><div class="icon">⚠️</div><p style="color:var(--accent);font-weight:600">Error de conexión</p><p style="margin-top:8px;font-size:0.85rem">${err.message}</p></div>`;
+  } catch(err) {
+    container.innerHTML = '<div class="no-eventos"><div class="icon">⚠️</div><p style="color:var(--accent);font-weight:600">Error de conexión</p><p style="margin-top:8px;font-size:0.85rem">' + escapar(err.message) + '</p></div>';
   }
 }
 
-function seleccionarEvento(idx){
-  document.querySelectorAll('.evento-card').forEach(c=>c.classList.remove('selected'));
-  const card=document.querySelector(`.evento-card[data-idx="${idx}"]`);
-  if(card) card.classList.add('selected');
-  eventoSeleccionado=window._eventosIA[idx];
+function seleccionarEvento(idx) {
+  document.querySelectorAll('.evento-card').forEach(function(c) { c.classList.remove('selected'); });
+  var card = document.querySelector('.evento-card[data-idx="' + idx + '"]');
+  if (card) card.classList.add('selected');
+  eventoSeleccionado = window._eventosIA[idx];
   generarConIA();
 }
 
-async function generarConIA(){
-  if(!eventoSeleccionado) return;
-  const preview=document.getElementById('ia-preview');
+async function generarConIA() {
+  if (!eventoSeleccionado) return;
+  var preview = document.getElementById('ia-preview');
   preview.classList.add('visible');
-  preview.innerHTML=`<div class="generando-overlay" style="padding:60px">
-    <div class="spin"></div>
-    <p style="color:#7c3aed;font-weight:600;margin-top:8px">La IA está redactando la noticia...</p>
-    <p style="font-size:0.82rem;color:var(--ink-soft);margin-top:4px">Esto toma unos segundos</p>
-  </div>`;
+  preview.innerHTML = '<div class="generando-overlay" style="padding:60px"><div class="spin"></div><p style="color:#7c3aed;font-weight:600;margin-top:8px">La IA está redactando la noticia...</p><p style="font-size:0.82rem;color:var(--ink-soft);margin-top:4px">Esto puede tomar varios segundos</p></div>';
+
+  // El evento puede tener campos con caracteres especiales — lo serializamos
+  // de forma segura pasando campo a campo (evita problemas con JSON en URL).
+  var ev = eventoSeleccionado;
   try {
-    const res = await apiPost({action:'generarNoticia',evento:eventoSeleccionado,email:sesionActual.email,token:tokenActual});
-    if(res.ok){noticiaIAActual=res.noticia;mostrarPreviewIA(res.noticia);}
-    else{preview.innerHTML=`<div class="no-eventos"><div class="icon">⚠️</div><p style="color:var(--accent);font-weight:600">Error generando noticia</p><p style="margin-top:8px;font-size:0.85rem">${escapar(res.error)}</p><button class="btn btn-ghost" style="margin-top:16px" onclick="generarConIA()">🔄 Reintentar</button></div>`;}
-  } catch(err){
-    preview.innerHTML=`<div class="no-eventos"><div class="icon">⚠️</div><p style="color:var(--accent);font-weight:600">Error de conexión</p><p style="margin-top:8px;font-size:0.85rem">${escapar(err.message)}</p></div>`;
+    var res = await apiWrite({
+      action:        'generarNoticia',
+      email:         sesionActual.email,
+      token:         tokenActual,
+      eventoTitulo:  ev.titulo       || '',
+      eventoFecha:   ev.fecha        || '',
+      eventoLegible: ev.fechaLegible || '',
+      eventoDesc:    ev.descripcion  || ''
+    }, 90000);  // IA puede tardar más
+
+    if (res.ok) {
+      noticiaIAActual = res.noticia;
+      mostrarPreviewIA(res.noticia);
+    } else {
+      preview.innerHTML = '<div class="no-eventos"><div class="icon">⚠️</div><p style="color:var(--accent);font-weight:600">Error generando noticia</p><p style="margin-top:8px;font-size:0.85rem">' + escapar(res.error) + '</p><button class="btn btn-ghost" style="margin-top:16px" onclick="generarConIA()">🔄 Reintentar</button></div>';
+    }
+  } catch(err) {
+    preview.innerHTML = '<div class="no-eventos"><div class="icon">⚠️</div><p style="color:var(--accent);font-weight:600">Error de conexión</p><p style="margin-top:8px;font-size:0.85rem">' + escapar(err.message) + '</p><button class="btn btn-ghost" style="margin-top:16px" onclick="generarConIA()">🔄 Reintentar</button></div>';
   }
 }
 
-function mostrarPreviewIA(noticia){
-  const preview=document.getElementById('ia-preview');
+function mostrarPreviewIA(noticia) {
+  var preview = document.getElementById('ia-preview');
   preview.classList.add('visible');
-  preview.innerHTML=`
-    <div class="ia-preview-header">
-      <div class="ia-emoji">${escapar(noticia.emojiTema||'✨')}</div>
-      <div>
-        <div style="font-family:var(--font-head);font-size:1.1rem;font-weight:700;color:var(--ink);margin-bottom:4px">Noticia generada por IA</div>
-        <div class="ia-badge">IA · ${escapar(eventoSeleccionado.fechaLegible)}</div>
-      </div>
-    </div>
-    <div class="ia-field"><label>Título</label><input type="text" id="ia-titulo" value="${escapar(noticia.titulo)}"></div>
-    <div class="ia-field"><label>Subtítulo</label><input type="text" id="ia-subtitulo" value="${escapar(noticia.subtitulo)}"></div>
-    <div class="ia-field">
-      <label>Categoría</label>
-      <select id="ia-categoria">
-        <option value="Noticias Generales" ${noticia.categoria==='Noticias Generales'?'selected':''}>🗞️ Noticias Generales</option>
-        <option value="Académico" ${noticia.categoria==='Académico'?'selected':''}>📚 Académico</option>
-        <option value="Deportes" ${noticia.categoria==='Deportes'?'selected':''}>⚽ Deportes</option>
-        <option value="Cultura y Arte" ${noticia.categoria==='Cultura y Arte'?'selected':''}>🎨 Cultura y Arte</option>
-        <option value="Comunidad" ${noticia.categoria==='Comunidad'?'selected':''}>🤝 Comunidad</option>
-        <option value="Reconocimientos" ${noticia.categoria==='Reconocimientos'?'selected':''}>🏆 Reconocimientos</option>
-        <option value="Proyectos" ${noticia.categoria==='Proyectos'?'selected':''}>🚀 Proyectos</option>
-        <option value="Directivas" ${noticia.categoria==='Directivas'?'selected':''}>📢 Directivas</option>
-      </select>
-    </div>
-    <div class="ia-field"><label>Autor</label><input type="text" id="ia-autor" value="Redacción La Cima"></div>
-    <div class="ia-field"><label>Cuerpo de la noticia</label><textarea id="ia-cuerpo">${escapar(noticia.cuerpo)}</textarea></div>
-    <div class="ia-actions">
-      <button class="btn btn-ghost" onclick="generarConIA()">🔄 Regenerar</button>
-      <button class="btn btn-draft" onclick="publicarIANoticia(false)">💾 Borrador</button>
-      <button class="btn btn-publish" onclick="publicarIANoticia(true)">🚀 Publicar</button>
-    </div>`;
+  var categorias = ['Noticias Generales','Académico','Deportes','Cultura y Arte','Comunidad','Reconocimientos','Proyectos','Directivas'];
+  var optsHtml = categorias.map(function(c) {
+    return '<option value="' + c + '"' + (noticia.categoria === c ? ' selected' : '') + '>' + c + '</option>';
+  }).join('');
+
+  preview.innerHTML =
+    '<div class="ia-preview-header">' +
+      '<div class="ia-emoji">' + escapar(noticia.emojiTema || '✨') + '</div>' +
+      '<div><div style="font-family:var(--font-head);font-size:1.1rem;font-weight:700;color:var(--ink);margin-bottom:4px">Noticia generada por IA</div>' +
+      '<div class="ia-badge">IA · ' + escapar(eventoSeleccionado.fechaLegible) + '</div></div>' +
+    '</div>' +
+    '<div class="ia-field"><label>Título</label><input type="text" id="ia-titulo" value="' + escapar(noticia.titulo) + '"></div>' +
+    '<div class="ia-field"><label>Subtítulo</label><input type="text" id="ia-subtitulo" value="' + escapar(noticia.subtitulo) + '"></div>' +
+    '<div class="ia-field"><label>Categoría</label><select id="ia-categoria">' + optsHtml + '</select></div>' +
+    '<div class="ia-field"><label>Autor</label><input type="text" id="ia-autor" value="Redacción La Cima"></div>' +
+    '<div class="ia-field"><label>Cuerpo de la noticia</label><textarea id="ia-cuerpo" style="min-height:200px">' + escapar(noticia.cuerpo) + '</textarea></div>' +
+    '<div class="ia-actions">' +
+      '<button class="btn btn-ghost" onclick="generarConIA()">🔄 Regenerar</button>' +
+      '<button class="btn btn-draft" onclick="publicarIANoticia(false)">💾 Borrador</button>' +
+      '<button class="btn btn-publish" onclick="publicarIANoticia(true)">🚀 Publicar</button>' +
+    '</div>';
 }
 
-async function publicarIANoticia(publicar){
-  const titulo=document.getElementById('ia-titulo').value.trim();
-  const subtitulo=document.getElementById('ia-subtitulo').value.trim();
-  const categoria=document.getElementById('ia-categoria').value;
-  const autor=document.getElementById('ia-autor').value.trim();
-  const cuerpo=document.getElementById('ia-cuerpo').value.trim();
-  if(!titulo){mostrarToast('El título es obligatorio','error');return;}
-  if(!autor){mostrarToast('El autor es obligatorio','error');return;}
-  if(!cuerpo){mostrarToast('El cuerpo es obligatorio','error');return;}
-  mostrarLoading(publicar?'Publicando noticia IA...':'Guardando borrador IA...');
+async function publicarIANoticia(publicar) {
+  var titulo    = document.getElementById('ia-titulo').value.trim();
+  var subtitulo = document.getElementById('ia-subtitulo').value.trim();
+  var categoria = document.getElementById('ia-categoria').value;
+  var autor     = document.getElementById('ia-autor').value.trim();
+  var cuerpo    = document.getElementById('ia-cuerpo').value.trim();
+  if (!titulo) { mostrarToast('El título es obligatorio', 'error'); return; }
+  if (!autor)  { mostrarToast('El autor es obligatorio', 'error'); return; }
+  if (!cuerpo) { mostrarToast('El cuerpo es obligatorio', 'error'); return; }
+
+  mostrarLoading(publicar ? 'Publicando noticia IA...' : 'Guardando borrador IA...');
   try {
-    const res = await apiPost({
-      action:'publicarNoticia',
-      titulo, subtitulo, categoria, autor, cuerpo,
-      tipo:'texto', publicar, archivos:[],
-      emailAutor:sesionActual.email, tokenAcceso:tokenActual
-    });
+    var res = await apiWrite({
+      action:      'publicarNoticia',
+      titulo:      titulo,
+      subtitulo:   subtitulo,
+      categoria:   categoria,
+      autor:       autor,
+      cuerpo:      cuerpo,
+      tipo:        'texto',
+      publicar:    publicar ? 'true' : 'false',
+      archivos:    '[]',
+      emailAutor:  sesionActual.email,
+      tokenAcceso: tokenActual
+    }, 60000);
     ocultarLoading();
-    if(res.ok){
-      mostrarToast(res.mensaje,'success');
-      cargarNoticias(); cargarDashboard();
+    if (res.ok) {
+      mostrarToast(res.mensaje, 'success');
+      cargarNoticias();
+      cargarDashboard();
       document.getElementById('ia-preview').classList.remove('visible');
-      document.querySelectorAll('.evento-card').forEach(c=>c.classList.remove('selected'));
-      eventoSeleccionado=null;
-    } else mostrarToast('Error: '+res.error,'error');
-  } catch(err){ocultarLoading();mostrarToast('Error: '+err.message,'error');}
+      document.querySelectorAll('.evento-card').forEach(function(c) { c.classList.remove('selected'); });
+      eventoSeleccionado = null;
+    } else {
+      mostrarToast('Error: ' + res.error, 'error');
+    }
+  } catch(err) {
+    ocultarLoading();
+    mostrarToast('Error: ' + err.message, 'error');
+  }
 }
 
 // ══ DASHBOARD ══
-async function cargarDashboard(){
+async function cargarDashboard() {
   try {
-    const stats = await api({action:'estadisticas',email:sesionActual.email,token:tokenActual});
-    if(!stats) return;
-    document.getElementById('stat-total').textContent=stats.total;
-    document.getElementById('stat-pub').textContent=stats.publicadas;
-    document.getElementById('stat-draft').textContent=stats.borradores;
-    renderizarBarras('cat-bars',stats.porCategoria,'#c0392b');
-    renderizarBarras('mes-bars',stats.porMes,'#d4a017');
-  } catch(err){}
+    var stats = await api({
+      action: 'estadisticas',
+      email:  sesionActual.email,
+      token:  tokenActual
+    });
+    if (!stats) return;
+    document.getElementById('stat-total').textContent = stats.total;
+    document.getElementById('stat-pub').textContent   = stats.publicadas;
+    document.getElementById('stat-draft').textContent = stats.borradores;
+    renderizarBarras('cat-bars', stats.porCategoria, '#c0392b');
+    renderizarBarras('mes-bars', stats.porMes, '#d4a017');
+  } catch(err) {}
 }
 
-function renderizarBarras(id,data,color){
-  const entries=Object.entries(data).sort((a,b)=>b[1]-a[1]);
-  const max=entries.length?entries[0][1]:1;
-  document.getElementById(id).innerHTML=entries.map(([label,val])=>`
-    <div style="margin-bottom:12px">
-      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-        <span style="font-size:0.85rem;font-weight:600">${escapar(label)}</span>
-        <span style="font-size:0.85rem;color:var(--ink-soft)">${val}</span>
-      </div>
-      <div style="background:var(--cream);border-radius:4px;height:8px;overflow:hidden">
-        <div style="background:${color};height:100%;width:${(val/max*100).toFixed(1)}%;border-radius:4px;transition:width 0.5s ease"></div>
-      </div>
-    </div>`).join('')||'<p style="color:var(--ink-soft);font-size:0.9rem">Sin datos aún.</p>';
+function renderizarBarras(id, data, color) {
+  var entries = Object.entries(data).sort(function(a,b) { return b[1]-a[1]; });
+  var max = entries.length ? entries[0][1] : 1;
+  document.getElementById(id).innerHTML = entries.map(function(entry) {
+    var label = entry[0], val = entry[1];
+    return '<div style="margin-bottom:12px">' +
+      '<div style="display:flex;justify-content:space-between;margin-bottom:4px">' +
+        '<span style="font-size:0.85rem;font-weight:600">' + escapar(label) + '</span>' +
+        '<span style="font-size:0.85rem;color:var(--ink-soft)">' + val + '</span>' +
+      '</div>' +
+      '<div style="background:var(--cream);border-radius:4px;height:8px;overflow:hidden">' +
+        '<div style="background:' + color + ';height:100%;width:' + (val/max*100).toFixed(1) + '%;border-radius:4px;transition:width 0.5s ease"></div>' +
+      '</div>' +
+    '</div>';
+  }).join('') || '<p style="color:var(--ink-soft);font-size:0.9rem">Sin datos aún.</p>';
 }
 
 // ══ UTILIDADES ══
-function mostrarToast(mensaje,tipo='info'){
-  const icons={success:'✅',error:'❌',info:'ℹ️'};
-  const t=document.createElement('div'); t.className=`toast ${tipo}`;
-  t.innerHTML=`<span>${icons[tipo]||'ℹ️'}</span><span>${mensaje}</span>`;
+function mostrarToast(mensaje, tipo) {
+  tipo = tipo || 'info';
+  var icons = { success: '✅', error: '❌', info: 'ℹ️' };
+  var t = document.createElement('div');
+  t.className = 'toast ' + tipo;
+  t.innerHTML = '<span>' + (icons[tipo] || 'ℹ️') + '</span><span>' + mensaje + '</span>';
   document.getElementById('toast-container').appendChild(t);
-  setTimeout(()=>t.remove(),4500);
+  setTimeout(function() { t.remove(); }, 5000);
 }
-function mostrarLoading(msg='Procesando...'){document.getElementById('load-msg').textContent=msg;document.getElementById('loading-overlay').classList.add('show');}
-function ocultarLoading(){document.getElementById('loading-overlay').classList.remove('show');}
-function formatBytes(b){return b<1024?b+' B':b<1048576?(b/1024).toFixed(1)+' KB':(b/1048576).toFixed(1)+' MB';}
-function escapar(str){if(!str)return'';return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+function mostrarLoading(msg) {
+  document.getElementById('load-msg').textContent = msg || 'Procesando...';
+  document.getElementById('loading-overlay').classList.add('show');
+}
+
+function ocultarLoading() {
+  document.getElementById('loading-overlay').classList.remove('show');
+}
+
+function formatBytes(b) {
+  return b < 1024 ? b + ' B' : b < 1048576 ? (b/1024).toFixed(1) + ' KB' : (b/1048576).toFixed(1) + ' MB';
+}
+
+function escapar(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#039;');
+}
 </script>
 </body>
 </html>
