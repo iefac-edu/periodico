@@ -11,647 +11,795 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Periódico La Cima · Fe y Alegría</title>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,700;0,900;1,300;1,700&family=Lora:ital,wght@0,400;0,600;1,400;1,600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --ink:     #0d0d18;
-      --paper:   #f9f6ef;
-      --cream:   #ede9df;
-      --accent:  #b5251a;
-      --gold:    #c09030;
-      --muted:   #6d6c7a;
-      --border:  #dcd7c8;
-      --white:   #ffffff;
+      --rojo:   #d0021b;
+      --rojo2:  #ff1f3a;
+      --negro:  #111118;
+      --gris1:  #f5f5f7;
+      --gris2:  #e8e8ec;
+      --gris3:  #6e6e80;
+      --blanco: #ffffff;
+      --sombra: rgba(17,17,24,0.08);
+
+      /* Paleta categorías */
+      --c-academico:    #dbeafe; --ct-academico:    #1e40af;
+      --c-deportes:     #dcfce7; --ct-deportes:     #166534;
+      --c-cultura:      #fef3c7; --ct-cultura:      #92400e;
+      --c-comunidad:    #fce7f3; --ct-comunidad:    #9d174d;
+      --c-reconoc:      #ede9fe; --ct-reconoc:      #5b21b6;
+      --c-proyectos:    #e0f2fe; --ct-proyectos:    #075985;
+      --c-directivas:   #fff7ed; --ct-directivas:   #9a3412;
+      --c-general:      #f1f5f9; --ct-general:      #334155;
+      --c-tecnologia:   #d1fae5; --ct-tecnologia:   #065f46;
+
+      --ff-title: 'Playfair Display', Georgia, serif;
+      --ff-body:  'Plus Jakarta Sans', system-ui, sans-serif;
+      --radius:   16px;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { scroll-behavior: smooth; }
+    body { font-family: var(--ff-body); background: var(--gris1); color: var(--negro); overflow-x: hidden; }
+    img { display: block; }
+    button { cursor: pointer; font-family: var(--ff-body); }
 
-    body {
-      background: var(--paper); color: var(--ink);
-      font-family: 'Lora', serif; min-height: 100vh;
-    }
-
-    /* ── MASTHEAD ── */
-    .masthead {
-      background: var(--ink); padding: 0.55rem 2.5rem;
+    /* ── TOPBAR ── */
+    .topbar {
+      background: var(--rojo); color: white;
       display: flex; align-items: center; justify-content: space-between;
-      border-bottom: 1.5px solid rgba(192,144,48,0.5);
+      padding: 0.4rem 2rem; font-size: 0.72rem; font-weight: 500;
+      letter-spacing: 0.03em;
     }
-    .masthead-left {
-      font-family: 'DM Sans', sans-serif; font-size: 0.72rem;
-      letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted);
-    }
-    .masthead-right {
-      font-family: 'DM Sans', sans-serif; font-size: 0.72rem;
-      letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold);
-    }
+    .topbar-right { opacity: 0.85; }
 
-    /* ── NAMEPLATE ── */
-    .nameplate {
-      background: var(--ink); text-align: center;
-      padding: 3rem 2rem 2.5rem; position: relative; overflow: hidden;
-    }
-    .nameplate::before {
-      content: '';
-      position: absolute; inset: 0;
-      background: repeating-linear-gradient(
-        0deg, transparent, transparent 30px,
-        rgba(255,255,255,0.025) 30px, rgba(255,255,255,0.025) 31px
-      );
-    }
-    .np-eyebrow {
-      font-family: 'DM Sans', sans-serif; font-size: 0.7rem;
-      letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold);
-      margin-bottom: 1rem; position: relative;
-    }
-    .np-title {
-      font-family: 'Fraunces', serif; font-weight: 900;
-      font-size: clamp(4rem, 10vw, 7.5rem); line-height: 0.88;
-      color: var(--paper); letter-spacing: -0.03em; position: relative;
-    }
-    .np-title em { font-style: italic; color: var(--gold); }
-    .np-school {
-      font-family: 'DM Sans', sans-serif; font-size: 0.78rem;
-      letter-spacing: 0.18em; text-transform: uppercase;
-      color: rgba(255,255,255,0.3); margin-top: 1.1rem; position: relative;
-    }
-    .np-ornament {
-      display: flex; align-items: center; gap: 0.75rem;
-      max-width: 420px; margin: 1.4rem auto 0; position: relative;
-    }
-    .np-ornament::before, .np-ornament::after {
-      content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.15);
-    }
-    .np-ornament span { color: var(--gold); font-size: 0.9rem; letter-spacing: 0.3em; }
-
-    /* ── NAV ── */
-    nav {
-      background: var(--cream); border-bottom: 1px solid var(--border);
-      display: flex; align-items: center; padding: 0 2.5rem;
+    /* ── HEADER ── */
+    .site-header {
+      background: var(--blanco);
+      border-bottom: 1px solid var(--gris2);
+      padding: 0.9rem 2rem;
+      display: flex; align-items: center; gap: 1.2rem;
       position: sticky; top: 0; z-index: 200;
-      overflow-x: auto; scrollbar-width: none;
+      box-shadow: 0 2px 16px var(--sombra);
     }
-    nav::-webkit-scrollbar { display: none; }
-    .nav-btn {
-      font-family: 'DM Sans', sans-serif; font-size: 0.78rem; font-weight: 600;
-      letter-spacing: 0.09em; text-transform: uppercase;
-      color: var(--muted); padding: 0.88rem 1rem;
-      border: none; border-bottom: 2px solid transparent; margin-bottom: -1px;
-      background: none; cursor: pointer; transition: all 0.2s; white-space: nowrap;
-    }
-    .nav-btn:hover { color: var(--ink); }
-    .nav-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
-    .nav-spacer { flex: 1; }
-    .nav-search {
-      display: flex; align-items: center; gap: 0.45rem;
-      padding: 0.38rem 0.8rem; background: white;
-      border: 1px solid var(--border); border-radius: 100px; margin-left: 1rem;
-    }
-    .nav-search input {
-      border: none; outline: none; font-family: 'DM Sans', sans-serif;
-      font-size: 0.8rem; color: var(--ink); width: 130px; background: transparent;
-    }
-    .nav-search .si { color: var(--muted); font-size: 0.85rem; }
+    .logo-wrap { display: flex; align-items: center; gap: 1rem; text-decoration: none; }
+    .logo-img { width: 52px; height: 52px; object-fit: contain; }
+    .logo-text { line-height: 1; }
+    .logo-eyebrow { font-size: 0.65rem; font-weight: 600; color: var(--gris3); letter-spacing: 0.05em; text-transform: uppercase; }
+    .logo-name { font-family: var(--ff-title); font-size: 1.7rem; font-weight: 900; color: var(--rojo); letter-spacing: -0.03em; line-height: 1; }
+    .logo-sub { font-size: 0.62rem; color: var(--gris3); margin-top: 0.15rem; }
 
-    /* ── TICKER ── */
-    .ticker {
-      background: var(--accent); padding: 0.45rem 2.5rem;
-      display: none; align-items: center; gap: 1rem; overflow: hidden;
+    /* NAV */
+    .header-nav { display: flex; align-items: center; gap: 0.2rem; flex: 1; margin-left: 1.5rem; }
+    .hnav-btn {
+      font-size: 0.78rem; font-weight: 600; color: var(--gris3);
+      padding: 0.45rem 0.85rem; border: none; border-bottom: 2.5px solid transparent;
+      background: none; transition: all 0.18s; white-space: nowrap; letter-spacing: 0.01em;
     }
-    .ticker.show { display: flex; }
-    .ticker-tag {
-      font-family: 'DM Sans', sans-serif; font-size: 0.65rem; font-weight: 700;
-      letter-spacing: 0.12em; text-transform: uppercase;
-      background: white; color: var(--accent); padding: 0.12rem 0.5rem; border-radius: 3px; white-space: nowrap;
+    .hnav-btn:hover { color: var(--rojo); }
+    .hnav-btn.active { color: var(--rojo); border-bottom-color: var(--rojo); }
+    .header-search-btn {
+      margin-left: auto; width: 36px; height: 36px; border-radius: 50%;
+      background: var(--gris1); border: 1px solid var(--gris2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.95rem; transition: all 0.15s; flex-shrink: 0;
     }
-    .ticker-text {
-      font-family: 'DM Sans', sans-serif; font-size: 0.83rem; color: white;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
+    .header-search-btn:hover { background: var(--rojo); }
 
-    /* ── CONTAINER ── */
-    .container { max-width: 1160px; margin: 0 auto; padding: 0 2.5rem; }
+    /* Search bar expandible */
+    .search-bar {
+      background: var(--blanco); border-bottom: 1px solid var(--gris2);
+      padding: 0.8rem 2rem; display: none; align-items: center; gap: 0.8rem;
+    }
+    .search-bar.open { display: flex; }
+    .search-bar input {
+      flex: 1; max-width: 500px; border: 1.5px solid var(--gris2); border-radius: 100px;
+      padding: 0.55rem 1.1rem; font-family: var(--ff-body); font-size: 0.9rem;
+      outline: none; transition: border-color 0.2s;
+    }
+    .search-bar input:focus { border-color: var(--rojo); }
+    .search-close { font-size: 1.1rem; color: var(--gris3); background: none; border: none; padding: 0.2rem; }
 
-    /* ── PORTADA ── */
-    .portada { padding: 2.5rem 0 2rem; }
-    .portada-grid {
-      display: grid; grid-template-columns: 2fr 1fr;
-      border: 1px solid var(--border); background: var(--white);
+    /* ── HERO EDITORIAL ── */
+    .hero-section {
+      background: var(--blanco); padding: 3rem 2rem 3.5rem;
+      border-bottom: 1px solid var(--gris2);
     }
-    .pg-main {
-      padding: 2rem; border-right: 1px solid var(--border);
-      cursor: pointer; transition: background 0.15s;
+    .hero-inner { max-width: 1180px; margin: 0 auto; }
+    .hero-label {
+      font-size: 0.68rem; font-weight: 700; color: var(--rojo);
+      letter-spacing: 0.2em; text-transform: uppercase;
+      display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;
     }
-    .pg-main:hover { background: var(--paper); }
-    .pg-side { display: flex; flex-direction: column; }
-    .pg-item {
-      padding: 1.2rem 1.5rem; border-bottom: 1px solid var(--border);
-      cursor: pointer; transition: background 0.15s; flex: 1;
+    .hero-label::before { content: ''; width: 24px; height: 2px; background: var(--rojo); }
+    .hero-title {
+      font-family: var(--ff-title); font-size: clamp(2.6rem, 5.5vw, 4.2rem);
+      font-weight: 900; line-height: 1.05; color: var(--negro);
+      letter-spacing: -0.03em; max-width: 640px; margin-bottom: 1rem;
     }
-    .pg-item:last-child { border-bottom: none; }
-    .pg-item:hover { background: var(--paper); }
-
-    .cat-label {
-      font-family: 'DM Sans', sans-serif; font-size: 0.68rem; font-weight: 700;
-      letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent);
-      display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.6rem;
-    }
-    .cat-label::before { content: ''; width: 14px; height: 2px; background: var(--accent); }
-
-    .pg-main h2 {
-      font-family: 'Fraunces', serif; font-size: 2rem; font-weight: 700;
-      line-height: 1.15; margin-bottom: 0.9rem;
-    }
-    .pg-item h3 {
-      font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 700;
-      line-height: 1.3; margin-bottom: 0.45rem;
+    .hero-sub {
+      font-size: 1rem; color: var(--gris3); line-height: 1.65;
+      max-width: 460px; margin-bottom: 2.5rem;
     }
 
-    .excerpt {
-      font-size: 0.93rem; color: var(--muted); line-height: 1.7;
+    /* SLIDER dentro del hero */
+    .slider-wrap { position: relative; overflow: hidden; border-radius: var(--radius); }
+    .slider-track { display: flex; transition: transform 0.55s cubic-bezier(0.77,0,0.175,1); }
+    .slide-item {
+      min-width: 100%; background: var(--negro);
+      border-radius: var(--radius); overflow: hidden;
+      cursor: pointer; display: grid; grid-template-columns: 1fr 1fr;
+      min-height: 360px;
     }
-    .meta {
-      font-family: 'DM Sans', sans-serif; font-size: 0.72rem; color: #9898a8;
-      margin-top: 0.7rem; display: flex; gap: 0.7rem; flex-wrap: wrap;
+    .slide-img-col {
+      position: relative; overflow: hidden; background: var(--gris2);
+      display: flex; align-items: center; justify-content: center;
     }
-    .mbadge {
-      display: inline-flex; align-items: center; gap: 0.25rem;
-      font-family: 'DM Sans', sans-serif; font-size: 0.68rem;
-      padding: 0.15rem 0.45rem; border-radius: 3px; margin-top: 0.45rem; margin-right: 0.25rem;
+    .slide-img-col img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; transition: transform 0.6s; }
+    .slide-img-placeholder { font-size: 5rem; opacity: 0.08; font-family: var(--ff-title); color: white; font-weight: 900; font-style: italic; }
+    .slide-item:hover .slide-img-col img { transform: scale(1.04); }
+    .slide-text-col {
+      padding: 2.5rem; display: flex; flex-direction: column;
+      justify-content: center; background: var(--negro);
     }
-    .mb-texto  { background: rgba(42,138,82,0.1); color: #1e6e3a; }
-    .mb-imagen { background: rgba(52,152,219,0.1); color: #1a6da0; }
-    .mb-video  { background: rgba(142,68,173,0.1); color: #6c3483; }
+    .slide-cat-badge {
+      display: inline-flex; align-items: center; gap: 0.35rem;
+      font-size: 0.62rem; font-weight: 700; letter-spacing: 0.18em;
+      text-transform: uppercase; color: var(--rojo2);
+      background: rgba(255,31,58,0.12); border: 1px solid rgba(255,31,58,0.25);
+      padding: 0.28rem 0.7rem; border-radius: 100px;
+      margin-bottom: 1.2rem; width: fit-content;
+    }
+    .slide-titulo {
+      font-family: var(--ff-title); font-size: clamp(1.4rem, 2.5vw, 2rem);
+      font-weight: 700; color: white; line-height: 1.2; margin-bottom: 0.85rem;
+    }
+    .slide-subtitulo { font-size: 0.88rem; color: rgba(255,255,255,0.55); line-height: 1.65; margin-bottom: 1.5rem; }
+    .slide-meta-row { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+    .slide-meta { font-size: 0.7rem; color: rgba(255,255,255,0.3); }
+    .leer-mas {
+      font-size: 0.8rem; font-weight: 700; color: var(--rojo2);
+      text-decoration: none; display: inline-flex; align-items: center; gap: 0.3rem;
+      background: none; border: none; padding: 0; transition: gap 0.15s;
+    }
+    .leer-mas:hover { gap: 0.55rem; }
 
-    /* ── SECTION RULE ── */
-    .srule {
-      display: flex; align-items: center; gap: 1rem; margin: 2.5rem 0 1.5rem;
+    /* Controles slider */
+    .slider-controls {
+      display: flex; align-items: center; gap: 0.7rem; margin-top: 1.2rem;
     }
-    .srule h2 { font-family: 'Fraunces', serif; font-size: 1.2rem; font-weight: 700; white-space: nowrap; }
-    .srule::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .sl-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--gris2); border: none; padding: 0; transition: all 0.25s;
+    }
+    .sl-dot.active { background: var(--rojo); width: 24px; border-radius: 4px; }
+    .sl-btn {
+      width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid var(--gris2);
+      background: white; color: var(--negro); font-size: 0.9rem;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s; margin-left: auto;
+    }
+    .sl-btn + .sl-btn { margin-left: 0.4rem; }
+    .sl-btn:hover { background: var(--rojo); color: white; border-color: var(--rojo); }
 
-    /* ── NEWS GRID ── */
-    .two-col { display: grid; grid-template-columns: 1fr 280px; gap: 3rem; margin-bottom: 3.5rem; }
-    .news-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.4rem; }
+    /* ── SECCIÓN NOTICIAS ── */
+    .news-section { max-width: 1180px; margin: 0 auto; padding: 3rem 2rem 5rem; }
 
+    .section-head {
+      display: flex; align-items: baseline; gap: 1rem;
+      margin-bottom: 2rem; padding-bottom: 1rem;
+      border-bottom: 1.5px solid var(--gris2);
+    }
+    .section-head h2 {
+      font-family: var(--ff-title); font-size: 1.6rem; font-weight: 900;
+      letter-spacing: -0.02em; color: var(--negro);
+    }
+    .section-head .sh-count { font-size: 0.78rem; color: var(--gris3); }
+
+    /* GRID MASONRY-STYLE */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.4rem;
+    }
+
+    /* Card base */
     .ncard {
-      border-top: 3px solid var(--border); padding-top: 1rem;
-      cursor: pointer; transition: border-color 0.2s;
+      background: var(--blanco); border-radius: var(--radius);
+      overflow: hidden; cursor: pointer;
+      transition: transform 0.22s ease, box-shadow 0.22s ease;
+      border: 1px solid rgba(0,0,0,0.06);
+      display: flex; flex-direction: column;
     }
-    .ncard:hover { border-top-color: var(--accent); }
-    .ncard h3 {
-      font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 700;
-      line-height: 1.3; margin: 0.35rem 0 0.55rem;
-    }
-    .ncard p { font-size: 0.85rem; color: var(--muted); line-height: 1.65; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .ncard:hover { transform: translateY(-5px); box-shadow: 0 16px 40px var(--sombra); }
 
-    /* ── SIDEBAR HISTÓRICO ── */
-    .historico { position: sticky; top: 48px; height: fit-content; }
-    .hist-title {
-      font-family: 'Fraunces', serif; font-size: 1.05rem; font-weight: 700;
-      padding-bottom: 0.7rem; border-bottom: 2px solid var(--ink); margin-bottom: 0.9rem;
+    /* Imagen / Color top */
+    .ncard-top {
+      height: 190px; position: relative; overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
     }
-    .hmes-item { border-bottom: 1px solid var(--border); }
-    .hmes-hdr {
+    .ncard-top img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s; }
+    .ncard:hover .ncard-top img { transform: scale(1.06); }
+    .ncard-top-placeholder {
+      font-family: var(--ff-title); font-size: 3.5rem; font-weight: 900;
+      font-style: italic; opacity: 0.18; letter-spacing: -0.03em;
+      color: var(--ct);
+    }
+    /* color del fondo por categoría */
+    .ncard[data-cat="Académico"]        .ncard-top { background: var(--c-academico); }
+    .ncard[data-cat="Deportes"]         .ncard-top { background: var(--c-deportes); }
+    .ncard[data-cat="Cultura y Arte"]   .ncard-top { background: var(--c-cultura); }
+    .ncard[data-cat="Comunidad"]        .ncard-top { background: var(--c-comunidad); }
+    .ncard[data-cat="Reconocimientos"]  .ncard-top { background: var(--c-reconoc); }
+    .ncard[data-cat="Proyectos"]        .ncard-top { background: var(--c-proyectos); }
+    .ncard[data-cat="Directivas"]       .ncard-top { background: var(--c-directivas); }
+    .ncard[data-cat="Tecnología"]       .ncard-top { background: var(--c-tecnologia); }
+    .ncard[data-cat="Noticias Generales"] .ncard-top { background: var(--c-general); }
+
+    /* Badge categoría */
+    .cat-badge {
+      position: absolute; top: 0.8rem; left: 0.8rem; z-index: 2;
+      font-size: 0.6rem; font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase; padding: 0.25rem 0.65rem;
+      border-radius: 100px;
+    }
+    .ncard[data-cat="Académico"]        .cat-badge { background:var(--c-academico); color:var(--ct-academico); }
+    .ncard[data-cat="Deportes"]         .cat-badge { background:var(--c-deportes);  color:var(--ct-deportes);  }
+    .ncard[data-cat="Cultura y Arte"]   .cat-badge { background:var(--c-cultura);   color:var(--ct-cultura);   }
+    .ncard[data-cat="Comunidad"]        .cat-badge { background:var(--c-comunidad); color:var(--ct-comunidad); }
+    .ncard[data-cat="Reconocimientos"]  .cat-badge { background:var(--c-reconoc);   color:var(--ct-reconoc);   }
+    .ncard[data-cat="Proyectos"]        .cat-badge { background:var(--c-proyectos); color:var(--ct-proyectos); }
+    .ncard[data-cat="Directivas"]       .cat-badge { background:var(--c-directivas);color:var(--ct-directivas);}
+    .ncard[data-cat="Tecnología"]       .cat-badge { background:var(--c-tecnologia);color:var(--ct-tecnologia);}
+    .ncard[data-cat="Noticias Generales"] .cat-badge { background:var(--c-general); color:var(--ct-general);   }
+
+    /* Cuerpo card */
+    .ncard-body { padding: 1.2rem 1.3rem 1.4rem; flex: 1; display: flex; flex-direction: column; }
+    .ncard-title {
+      font-family: var(--ff-title); font-size: 1.05rem; font-weight: 700;
+      line-height: 1.3; color: var(--negro); margin-bottom: 0.55rem;
+      display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .ncard-sub {
+      font-size: 0.82rem; color: var(--gris3); line-height: 1.6; flex: 1;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+      margin-bottom: 1rem;
+    }
+    .ncard-footer { display: flex; align-items: center; justify-content: space-between; }
+    .ncard-date { font-size: 0.68rem; color: #aaa; display: flex; align-items: center; gap: 0.3rem; }
+    .ncard-leer {
+      font-size: 0.75rem; font-weight: 700; color: var(--rojo);
+      background: none; border: none; padding: 0;
+      display: flex; align-items: center; gap: 0.25rem; transition: gap 0.15s;
+    }
+    .ncard-leer:hover { gap: 0.45rem; }
+
+    /* Histórico */
+    .hist-section {
+      background: var(--blanco); border-top: 1px solid var(--gris2);
+      padding: 2.5rem 2rem;
+    }
+    .hist-inner { max-width: 1180px; margin: 0 auto; }
+    .hist-inner h3 {
+      font-family: var(--ff-title); font-size: 1.2rem; font-weight: 700;
+      margin-bottom: 1.2rem; letter-spacing: -0.01em;
+    }
+    .hist-meses { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+    .hist-mes-btn {
+      padding: 0.45rem 1rem; border-radius: 100px;
+      border: 1.5px solid var(--gris2); background: white;
+      font-size: 0.8rem; font-weight: 600; color: var(--gris3);
+      transition: all 0.15s; text-transform: capitalize;
+    }
+    .hist-mes-btn:hover, .hist-mes-btn.active { background: var(--rojo); color: white; border-color: var(--rojo); }
+
+    /* Banner suscripción */
+    .suscribe-banner {
+      background: var(--rojo); padding: 1.1rem 2rem;
+      display: flex; align-items: center; gap: 1.2rem; flex-wrap: wrap;
+    }
+    .suscribe-banner .sb-icon { font-size: 1.3rem; }
+    .suscribe-banner .sb-text { flex: 1; min-width: 200px; }
+    .suscribe-banner .sb-text h4 { font-size: 0.92rem; font-weight: 700; color: white; }
+    .suscribe-banner .sb-text p  { font-size: 0.75rem; color: rgba(255,255,255,0.7); margin-top: 0.1rem; }
+    .suscribe-btn {
+      padding: 0.55rem 1.4rem; background: white; color: var(--rojo);
+      border: none; border-radius: 100px; font-weight: 700; font-size: 0.85rem;
+      white-space: nowrap; transition: all 0.15s;
+    }
+    .suscribe-btn:hover { background: var(--negro); color: white; }
+
+    /* Empty / Loading */
+    .empty-state {
+      grid-column: 1 / -1; text-align: center; padding: 5rem 2rem; color: var(--gris3);
+    }
+    .empty-state .es-icon { font-size: 3rem; margin-bottom: 0.8rem; }
+    .empty-state h3 { font-family: var(--ff-title); font-size: 1.4rem; color: var(--negro); margin-bottom: 0.4rem; }
+
+    /* Carga inicial */
+    #init-screen {
+      position: fixed; inset: 0; background: var(--blanco);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 1.2rem; z-index: 9999; transition: opacity 0.4s;
+    }
+    .init-logo { width: 72px; height: 72px; object-fit: contain; }
+    .init-name { font-family: var(--ff-title); font-size: 2.8rem; font-weight: 900; color: var(--rojo); letter-spacing: -0.03em; }
+    .init-spin {
+      width: 28px; height: 28px; border-radius: 50%;
+      border: 2.5px solid var(--gris2); border-top-color: var(--rojo);
+      animation: sp 0.7s linear infinite;
+    }
+    @keyframes sp { to { transform: rotate(360deg); } }
+
+    /* Footer */
+    footer {
+      background: var(--negro); padding: 2.5rem 2rem 1.5rem;
+    }
+    .footer-inner {
+      max-width: 1180px; margin: 0 auto;
       display: flex; align-items: center; justify-content: space-between;
-      padding: 0.7rem 0; cursor: pointer;
-      font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 600;
-      transition: color 0.15s; background: none; border: none; width: 100%; text-align: left;
-      color: var(--ink);
+      flex-wrap: wrap; gap: 1.5rem;
     }
-    .hmes-hdr:hover { color: var(--accent); }
-    .hmes-hdr .cnt { font-size: 0.75rem; color: var(--muted); font-weight: 400; }
-    .hmes-hdr .arr { font-size: 0.65rem; color: var(--muted); transition: transform 0.2s; }
-    .hmes-hdr.open .arr { transform: rotate(90deg); }
-    .hmes-list { display: none; padding-bottom: 0.4rem; }
-    .hmes-list.open { display: block; }
-    .hmes-link {
-      display: block; font-family: 'DM Sans', sans-serif; font-size: 0.8rem;
-      color: var(--muted); padding: 0.28rem 0 0.28rem 0.7rem;
-      border-left: 2px solid transparent; cursor: pointer; transition: all 0.15s; line-height: 1.4;
-      background: none; border-top: none; border-bottom: none; border-right: none;
-      text-align: left; width: 100%;
-    }
-    .hmes-link:hover { color: var(--accent); border-left-color: var(--accent); }
+    .footer-brand { display: flex; align-items: center; gap: 0.8rem; }
+    .footer-brand img { width: 40px; height: 40px; object-fit: contain; opacity: 0.7; }
+    .footer-brand .fb-name { font-family: var(--ff-title); font-size: 1.4rem; font-weight: 900; color: white; letter-spacing: -0.02em; }
+    .footer-brand .fb-name em { font-style: italic; color: var(--rojo2); }
+    .footer-right { font-size: 0.75rem; color: rgba(255,255,255,0.25); text-align: right; line-height: 1.8; }
 
-    /* ── MODAL ── */
+    /* Modal */
     .modal-overlay {
-      position: fixed; inset: 0; background: rgba(8,8,16,0.78);
-      display: none; align-items: flex-start; justify-content: center;
-      z-index: 9000; padding: 2rem 1rem; overflow-y: auto;
-      backdrop-filter: blur(5px);
+      position: fixed; inset: 0; background: rgba(10,10,18,0.78);
+      backdrop-filter: blur(8px); display: none; align-items: flex-start;
+      justify-content: center; z-index: 8000; padding: 2rem 1rem;
+      overflow-y: auto;
     }
     .modal-overlay.open { display: flex; }
     .modal {
-      background: var(--paper); max-width: 700px; width: 100%;
-      border-radius: 4px; overflow: hidden;
-      animation: slideUp 0.3s ease;
+      background: var(--blanco); max-width: 700px; width: 100%;
+      border-radius: 20px; overflow: hidden;
+      animation: mIn 0.35s cubic-bezier(0.34,1.4,0.64,1);
+      box-shadow: 0 40px 100px rgba(0,0,0,0.4);
     }
-    @keyframes slideUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
-    .mhdr { background: var(--ink); padding: 2rem; position: relative; }
-    .mhdr-cat {
-      font-family: 'DM Sans', sans-serif; font-size: 0.68rem; font-weight: 700;
-      letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); margin-bottom: 0.7rem;
+    @keyframes mIn { from { opacity:0; transform:translateY(24px) scale(0.97); } to { opacity:1; transform:none; } }
+    .m-header { padding: 2rem 2rem 1.5rem; position: relative; }
+    .m-cat-pill {
+      display: inline-flex; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.15em;
+      text-transform: uppercase; padding: 0.28rem 0.75rem; border-radius: 100px;
+      margin-bottom: 0.9rem;
     }
-    .mhdr h2 { font-family: 'Fraunces', serif; font-size: 1.75rem; color: var(--paper); line-height: 1.2; }
-    .mhdr-meta {
-      font-family: 'DM Sans', sans-serif; font-size: 0.77rem;
-      color: rgba(255,255,255,0.38); margin-top: 0.7rem; display: flex; gap: 0.7rem; flex-wrap: wrap;
-    }
-    .mclose {
+    .m-title { font-family: var(--ff-title); font-size: 1.75rem; font-weight: 900; line-height: 1.15; color: var(--negro); }
+    .m-meta { font-size: 0.72rem; color: var(--gris3); margin-top: 0.7rem; display: flex; gap: 1rem; flex-wrap: wrap; }
+    .m-close {
       position: absolute; top: 1.2rem; right: 1.2rem;
-      background: rgba(255,255,255,0.1); border: none; cursor: pointer;
-      color: white; font-size: 1.1rem; width: 34px; height: 34px;
-      border-radius: 50%; display: flex; align-items: center; justify-content: center;
-      transition: background 0.15s;
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--gris1); border: none; color: var(--gris3);
+      font-size: 0.95rem; display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
     }
-    .mclose:hover { background: rgba(255,255,255,0.2); }
-    .mbody { padding: 2rem; }
-    .mbody .mresumen {
-      font-size: 1rem; font-style: italic; font-weight: 600;
-      line-height: 1.65; margin-bottom: 1.2rem; padding-bottom: 1.2rem;
-      border-bottom: 1px solid var(--border); color: var(--ink);
+    .m-close:hover { background: var(--rojo); color: white; }
+    .m-divider { height: 1px; background: var(--gris2); }
+    .m-body { padding: 1.8rem 2rem; }
+    .m-resumen {
+      font-family: var(--ff-title); font-size: 1rem; font-style: italic; color: #444;
+      line-height: 1.7; margin-bottom: 1.2rem; padding-bottom: 1.2rem;
+      border-bottom: 1px solid var(--gris2);
     }
-    .mbody .mcuerpo { font-size: 0.97rem; line-height: 1.82; color: #22222e; white-space: pre-wrap; }
-    .mfooter {
-      padding: 1.1rem 2rem; background: var(--cream);
-      border-top: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;
+    .m-cuerpo { font-size: 0.94rem; line-height: 1.85; color: #222; white-space: pre-wrap; }
+    .m-footer {
+      padding: 1rem 2rem; background: var(--gris1);
+      border-top: 1px solid var(--gris2);
+      display: flex; justify-content: flex-end;
     }
-    .drive-link {
-      font-family: 'DM Sans', sans-serif; font-size: 0.8rem;
-      color: var(--accent); text-decoration: none;
-      display: flex; align-items: center; gap: 0.35rem;
+    .m-drive-link {
+      font-size: 0.8rem; font-weight: 600; color: var(--rojo);
+      text-decoration: none; display: flex; align-items: center; gap: 0.3rem;
     }
-    .drive-link:hover { text-decoration: underline; }
+    .m-drive-link:hover { text-decoration: underline; }
 
-    /* ── EMPTY / LOADING ── */
-    .empty {
-      text-align: center; padding: 3.5rem 2rem; color: var(--muted);
-      grid-column: 1 / -1;
-    }
-    .empty .eico { font-size: 2.5rem; margin-bottom: 0.75rem; }
-    .empty h3 { font-family: 'Fraunces', serif; color: var(--ink); margin-bottom: 0.35rem; }
-    .empty p { font-size: 0.88rem; }
-
-    /* ── LOADING SCREEN ── */
-    #init-loading {
-      position: fixed; inset: 0; background: var(--ink);
-      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem;
-      z-index: 9999; transition: opacity 0.4s;
-    }
-    #init-loading .logo { font-family: 'Fraunces', serif; font-size: 3.5rem; font-weight: 900; color: var(--paper); }
-    #init-loading .logo em { font-style: italic; color: var(--gold); }
-    .spinner {
-      width: 32px; height: 32px;
-      border: 2.5px solid rgba(255,255,255,0.1); border-top-color: var(--gold);
-      border-radius: 50%; animation: spin 0.75s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* ── FOOTER ── */
-    footer {
-      background: var(--ink); padding: 3rem 2.5rem 2rem;
-      border-top: 2px solid var(--gold); text-align: center;
-    }
-    footer .ft-name { font-family: 'Fraunces', serif; font-size: 2.2rem; font-weight: 900; color: var(--paper); }
-    footer .ft-name em { font-style: italic; color: var(--gold); }
-    footer .ft-sub { font-family: 'DM Sans', sans-serif; font-size: 0.72rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-top: 0.4rem; }
-    footer .ft-rule { width: 50px; height: 2px; background: var(--gold); margin: 1.5rem auto; }
-    footer .ft-credit { font-family: 'DM Sans', sans-serif; font-size: 0.78rem; color: #2e2e3a; line-height: 1.8; }
-
-    /* ── RESPONSIVE ── */
+    /* Responsive */
     @media (max-width: 900px) {
-      .two-col { grid-template-columns: 1fr; }
-      .historico { position: static; }
-      .news-grid { grid-template-columns: repeat(2, 1fr); }
+      .cards-grid { grid-template-columns: repeat(2, 1fr); }
+      .slide-item { grid-template-columns: 1fr; min-height: auto; }
+      .slide-img-col { height: 220px; }
+      .header-nav { display: none; }
     }
-    @media (max-width: 640px) {
-      .portada-grid { grid-template-columns: 1fr; display: block; }
-      .pg-main { border-right: none; border-bottom: 1px solid var(--border); }
-      .pg-main h2 { font-size: 1.5rem; }
-      .news-grid { grid-template-columns: 1fr; }
-      .container { padding: 0 1.2rem; }
-      .nameplate { padding: 2rem 1.2rem; }
-      nav { padding: 0 1.2rem; }
+    @media (max-width: 580px) {
+      .cards-grid { grid-template-columns: 1fr; }
+      .topbar { display: none; }
+      .hero-title { font-size: 2.2rem; }
+      .site-header { padding: 0.75rem 1rem; }
+      .hero-section { padding: 2rem 1rem; }
+      .news-section { padding: 2rem 1rem 4rem; }
     }
   </style>
 </head>
 <body>
 
-<!-- INIT LOADING -->
-<div id="init-loading">
-  <div class="logo">La <em>Cima</em></div>
-  <div class="spinner"></div>
+<!-- CARGA -->
+<div id="init-screen">
+  <img class="init-logo" src="https://www.feyalegrialacima.edu.co/img/I.E.Fe_y_Alegria_La_Cima.png" alt="" onerror="this.style.display='none'">
+  <div class="init-name">La Cima</div>
+  <div class="init-spin"></div>
 </div>
 
-<!-- MASTHEAD -->
-<div class="masthead">
-  <div class="masthead-left" id="mdate">—</div>
-  <div class="masthead-right">Fe y Alegría · Medellín</div>
+<!-- TOPBAR -->
+<div class="topbar">
+  <span id="topbar-date"></span>
+  <span class="topbar-right">Fe y Alegría &bull; Medellín</span>
 </div>
 
-<!-- NAMEPLATE -->
-<div class="nameplate">
-  <div class="np-eyebrow">Periódico Escolar</div>
-  <div class="np-title">La <em>Cima</em></div>
-  <div class="np-school">Institución Educativa Fe y Alegría La Cima</div>
-  <div class="np-ornament"><span>✦ ✦ ✦</span></div>
-</div>
-
-<!-- NAV -->
-<nav>
-  <button class="nav-btn active" onclick="setFilter('',this)">Inicio</button>
-  <button class="nav-btn" onclick="setFilter('Académico',this)">Académico</button>
-  <button class="nav-btn" onclick="setFilter('Deportes',this)">Deportes</button>
-  <button class="nav-btn" onclick="setFilter('Cultura',this)">Cultura</button>
-  <button class="nav-btn" onclick="setFilter('Comunidad',this)">Comunidad</button>
-  <button class="nav-btn" onclick="setFilter('Tecnología',this)">Tecnología</button>
-  <button class="nav-btn" onclick="setFilter('Arte',this)">Arte</button>
-  <button class="nav-btn" onclick="setFilter('Eventos',this)">Eventos</button>
-  <div class="nav-spacer"></div>
-  <div class="nav-search">
-    <span class="si">🔍</span>
-    <input type="text" placeholder="Buscar…" oninput="setSearch(this.value)">
-  </div>
-</nav>
-
-<!-- TICKER -->
-<div class="ticker" id="ticker">
-  <span class="ticker-tag">Destacado</span>
-  <span class="ticker-text" id="ticker-text"></span>
-</div>
-
-<!-- MAIN -->
-<div class="container">
-
-  <!-- PORTADA -->
-  <section class="portada">
-    <div class="portada-grid" id="portada">
-      <div class="empty" style="grid-column:1/-1; padding:3rem"><div class="eico">⏳</div><h3>Cargando…</h3></div>
+<!-- HEADER -->
+<header class="site-header">
+  <a class="logo-wrap" href="#">
+    <img class="logo-img" src="https://www.feyalegrialacima.edu.co/img/I.E.Fe_y_Alegria_La_Cima.png" alt="Logo" onerror="this.style.display='none'">
+    <div class="logo-text">
+      <div class="logo-eyebrow">I.E. Fe y Alegría</div>
+      <div class="logo-name">La Cima</div>
+      <div class="logo-sub">Institución Educativa Fe y Alegría La Cima</div>
     </div>
-  </section>
+  </a>
+  <nav class="header-nav">
+    <button class="hnav-btn active" onclick="setFilter('',this)">Inicio</button>
+    <button class="hnav-btn" onclick="setFilter('Académico',this)">Académico</button>
+    <button class="hnav-btn" onclick="setFilter('Deportes',this)">Deportes</button>
+    <button class="hnav-btn" onclick="setFilter('Cultura y Arte',this)">Cultura</button>
+    <button class="hnav-btn" onclick="setFilter('Comunidad',this)">Comunidad</button>
+    <button class="hnav-btn" onclick="setFilter('Tecnología',this)">Tecnología</button>
+    <button class="hnav-btn" onclick="setFilter('Arte',this)">Arte</button>
+    <button class="hnav-btn" onclick="setFilter('Eventos',this)">Eventos</button>
+  </nav>
+  <button class="header-search-btn" onclick="toggleSearch()">🔍</button>
+</header>
 
-  <!-- CONTENIDO + HISTÓRICO -->
-  <div class="two-col">
-    <div>
-      <div class="srule"><h2 id="section-title">Todas las noticias</h2></div>
-      <div class="news-grid" id="news-grid">
-        <div class="empty"><div class="eico">📰</div><h3>Cargando noticias…</h3></div>
+<!-- SEARCH BAR -->
+<div class="search-bar" id="search-bar">
+  <input type="text" id="search-input" placeholder="Buscar noticias…" oninput="setSearch(this.value)" autofocus>
+  <button class="search-close" onclick="toggleSearch()">✕</button>
+</div>
+
+<!-- HERO -->
+<section class="hero-section">
+  <div class="hero-inner">
+    <div class="hero-label">Periódico Escolar</div>
+    <h1 class="hero-title">Noticias que<br>nos inspiran</h1>
+    <p class="hero-sub">Entérate de todo lo que sucede en nuestra comunidad educativa.</p>
+
+    <!-- SLIDER -->
+    <div class="slider-wrap" id="slider-wrap">
+      <div class="slider-track" id="slider-track">
+        <!-- JS -->
       </div>
     </div>
-    <aside class="historico">
-      <div class="hist-title">📁 Histórico</div>
-      <div id="hist-list"><span style="color:var(--muted);font-size:0.85rem">Cargando…</span></div>
-    </aside>
+    <div class="slider-controls" id="slider-controls">
+      <!-- dots + botones -->
+    </div>
   </div>
+</section>
 
+<!-- BANNER SUSCRIPCIÓN -->
+<div class="suscribe-banner">
+  <span class="sb-icon">✉️</span>
+  <div class="sb-text">
+    <h4>¿Quieres recibir nuestras noticias?</h4>
+    <p>Suscríbete y recibe las últimas novedades de Fe y Alegría La Cima.</p>
+  </div>
+  <button class="suscribe-btn">Suscribirme</button>
+</div>
+
+<!-- NOTICIAS -->
+<section class="news-section">
+  <div class="section-head">
+    <h2 id="section-title">Últimas noticias</h2>
+    <span class="sh-count" id="news-count"></span>
+  </div>
+  <div class="cards-grid" id="cards-grid">
+    <div class="empty-state">
+      <div class="es-icon">⏳</div>
+      <h3>Cargando noticias…</h3>
+    </div>
+  </div>
+</section>
+
+<!-- HISTÓRICO -->
+<div class="hist-section" id="hist-section" style="display:none">
+  <div class="hist-inner">
+    <h3>📁 Histórico por mes</h3>
+    <div class="hist-meses" id="hist-meses"></div>
+  </div>
 </div>
 
 <!-- FOOTER -->
 <footer>
-  <div class="ft-name">La <em>Cima</em></div>
-  <div class="ft-sub">Periódico Escolar · Fe y Alegría</div>
-  <div class="ft-rule"></div>
-  <div class="ft-credit">
-    Institución Educativa Fe y Alegría La Cima · Medellín, Colombia<br>
-    Hecho con ❤️ por la comunidad educativa
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <img src="https://www.feyalegrialacima.edu.co/img/I.E.Fe_y_Alegria_La_Cima.png" alt="" onerror="this.style.display='none'">
+      <div class="fb-name">La <em>Cima</em></div>
+    </div>
+    <div class="footer-right">
+      © <span id="footer-year"></span> Periódico La Cima · Fe y Alegría<br>
+      Hecho con ❤️ por la comunidad educativa
+    </div>
   </div>
 </footer>
 
 <!-- MODAL -->
-<div class="modal-overlay" id="modal" onclick="closeModal(event)">
+<div class="modal-overlay" id="modal" onclick="cerrarModal(event)">
   <div class="modal">
-    <div class="mhdr">
-      <button class="mclose" onclick="closeModal()">✕</button>
-      <div class="mhdr-cat" id="m-cat"></div>
-      <h2 id="m-title"></h2>
-      <div class="mhdr-meta" id="m-meta"></div>
+    <div class="m-header">
+      <button class="m-close" onclick="cerrarModal()">✕</button>
+      <div class="m-cat-pill" id="m-cat"></div>
+      <h2 class="m-title" id="m-title"></h2>
+      <div class="m-meta" id="m-meta"></div>
     </div>
-    <div class="mbody">
-      <div class="mresumen" id="m-resumen" style="display:none"></div>
-      <div class="mcuerpo" id="m-cuerpo"></div>
+    <div class="m-divider"></div>
+    <div class="m-body">
+      <div class="m-resumen" id="m-resumen" style="display:none"></div>
+      <div class="m-cuerpo" id="m-cuerpo">Cargando…</div>
     </div>
-    <div class="mfooter">
-      <div id="m-tags"></div>
-      <a class="drive-link" id="m-drive" href="#" target="_blank" style="display:none">📁 Ver materiales en Drive →</a>
+    <div class="m-footer">
+      <a class="m-drive-link" id="m-drive" href="#" target="_blank" style="display:none">📁 Ver en Drive →</a>
     </div>
   </div>
 </div>
 
 <script>
-// ═══════════════════════════════
-//  STATE
-// ═══════════════════════════════
-let ALL  = [];
-let HIST = {};
-let filterCat = '';
-let filterQ   = '';
-
-// ═══════════════════════════════
-//  INIT
-// ═══════════════════════════════
+// ════════════════════════════════════════════
+//  CONFIG
+// ════════════════════════════════════════════
 const APPS_URL = 'https://script.google.com/macros/s/AKfycbwjLxGNP_llPDu9L0GpC-zYdgHbgDFzRXDXuTNcjkNYXoV_iQ2Xz24_YEFJdi7enxvcow/exec';
 
+// Colores categoría para modal pill
+const CAT_COLORS = {
+  'Académico':         { bg:'#dbeafe', color:'#1e40af' },
+  'Deportes':          { bg:'#dcfce7', color:'#166534' },
+  'Cultura y Arte':    { bg:'#fef3c7', color:'#92400e' },
+  'Comunidad':         { bg:'#fce7f3', color:'#9d174d' },
+  'Reconocimientos':   { bg:'#ede9fe', color:'#5b21b6' },
+  'Proyectos':         { bg:'#e0f2fe', color:'#075985' },
+  'Directivas':        { bg:'#fff7ed', color:'#9a3412' },
+  'Tecnología':        { bg:'#d1fae5', color:'#065f46' },
+  'Noticias Generales':{ bg:'#f1f5f9', color:'#334155' },
+};
+const CAT_EMOJI = {
+  'Académico':'📚','Deportes':'⚽','Cultura y Arte':'🎨','Comunidad':'🤝',
+  'Reconocimientos':'🏆','Proyectos':'🚀','Directivas':'📢',
+  'Tecnología':'💻','Noticias Generales':'🗞️',
+};
+
+// ════════════════════════════════════════════
+//  ESTADO
+// ════════════════════════════════════════════
+let ALL        = [];
+let filterCat  = '';
+let filterQ    = '';
+let slideIdx   = 0;
+let slideTimer = null;
+let mesActivo  = '';
+
+// ════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════
 window.addEventListener('load', () => {
   const d = new Date();
-  document.getElementById('mdate').textContent =
+  document.getElementById('topbar-date').textContent =
     d.toLocaleDateString('es-CO', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+  document.getElementById('footer-year').textContent = d.getFullYear();
 
   fetch(APPS_URL + '?action=noticiasPublicas')
-    .then(r => r.json()).then(onNewsLoaded)
-    .catch(() => onNewsLoaded([]));
-
-  fetch(APPS_URL + '?action=meses')
-    .then(r => r.json()).then(onMesesLoaded)
-    .catch(() => onMesesLoaded([]));
+    .then(r => r.json())
+    .then(data => { ALL = data || []; init(); })
+    .catch(() => { ALL = []; init(); });
 });
 
-function onNewsLoaded(data) {
-  ALL = data || [];
-  hideLoading();
-  renderAll();
-  if (ALL.length) {
-    document.getElementById('ticker').classList.add('show');
-    document.getElementById('ticker-text').textContent = ALL[0].titulo;
-  }
+function init() {
+  ocultarCarga();
+  renderSlider();
+  renderCards();
+  renderHistorico();
 }
 
-function onMesesLoaded(meses) {
-  buildHistorico(meses);
-}
-
-function hideLoading() {
-  const el = document.getElementById('init-loading');
+function ocultarCarga() {
+  const el = document.getElementById('init-screen');
   el.style.opacity = '0';
-  setTimeout(() => el.style.display = 'none', 400);
+  setTimeout(() => el.style.display = 'none', 450);
 }
 
-// ═══════════════════════════════
-//  RENDER
-// ═══════════════════════════════
-function filtered() {
-  let list = ALL;
-  if (filterCat) list = list.filter(n => n.categoria === filterCat);
-  if (filterQ)   list = list.filter(n =>
-    n.titulo.toLowerCase().includes(filterQ) ||
-    (n.resumen||'').toLowerCase().includes(filterQ) ||
-    (n.autor||'').toLowerCase().includes(filterQ)
-  );
-  return list;
-}
+// ════════════════════════════════════════════
+//  SLIDER
+// ════════════════════════════════════════════
+function renderSlider() {
+  const items = ALL.slice(0, 6);
+  if (!items.length) { document.getElementById('slider-wrap').style.display = 'none'; return; }
 
-function renderAll() {
-  renderPortada();
-  renderGrid();
-}
-
-function renderPortada() {
-  const news = filtered();
-  const el = document.getElementById('portada');
-  if (!news.length) {
-    el.innerHTML = `<div class="empty" style="grid-column:1/-1;padding:3rem"><div class="eico">📭</div><h3>Sin noticias publicadas aún</h3><p>Pronto habrá contenido.</p></div>`;
-    return;
-  }
-  const main = news[0];
-  const side = news.slice(1, 4);
-  el.innerHTML = `
-    <div class="pg-main" onclick="openModal(${esc(main)})">
-      <div class="cat-label">${main.categoria}</div>
-      <h2>${main.titulo}</h2>
-      <p class="excerpt">${main.resumen||''}</p>
-      <div class="meta"><span>📅 ${main.fecha}</span><span>✍️ ${main.autor}</span></div>
-      <div>${badges(main.tipos)}</div>
+  document.getElementById('slider-track').innerHTML = items.map((n, i) => `
+    <div class="slide-item" onclick="abrirModal(${esc(n)})">
+      <div class="slide-img-col">
+        ${n.portada
+          ? `<img src="${n.portada}" alt="${n.titulo}" onerror="this.remove()">`
+          : `<div class="slide-img-placeholder">${CAT_EMOJI[n.categoria]||'📰'}</div>`}
+      </div>
+      <div class="slide-text-col">
+        <div class="slide-cat-badge">${CAT_EMOJI[n.categoria]||'📰'} ${n.categoria}</div>
+        <div class="slide-titulo">${n.titulo}</div>
+        <div class="slide-subtitulo">${n.subtitulo || ''}</div>
+        <div class="slide-meta-row">
+          <span class="slide-meta">📅 ${n.fecha}</span>
+          <span class="slide-meta">✍️ ${n.autor}</span>
+          <button class="leer-mas">Leer más →</button>
+        </div>
+      </div>
     </div>
-    <div class="pg-side">
-      ${side.map(n => `
-        <div class="pg-item" onclick="openModal(${esc(n)})">
-          <div class="cat-label">${n.categoria}</div>
-          <h3>${n.titulo}</h3>
-          <div class="meta"><span>📅 ${n.fecha}</span></div>
-          <div>${badges(n.tipos)}</div>
-        </div>
-      `).join('')}
-    </div>`;
+  `).join('');
+
+  // Controles
+  const ctrl = document.getElementById('slider-controls');
+  ctrl.innerHTML =
+    items.map((_,i) => `<button class="sl-dot ${i===0?'active':''}" onclick="irSlide(${i})"></button>`).join('') +
+    `<button class="sl-btn" onclick="moverSlide(-1)">‹</button>
+     <button class="sl-btn" onclick="moverSlide(1)">›</button>`;
+
+  iniciarSlide();
 }
 
-function renderGrid() {
-  const news = filtered().slice(1);
-  const el = document.getElementById('news-grid');
-  if (!news.length) {
-    el.innerHTML = `<div class="empty"><div class="eico">📭</div><h3>Sin más noticias</h3></div>`;
+function moverSlide(dir) {
+  const total = document.querySelectorAll('.slide-item').length;
+  slideIdx = (slideIdx + dir + total) % total;
+  actualizarSlide();
+  resetSlide();
+}
+function irSlide(i) { slideIdx = i; actualizarSlide(); resetSlide(); }
+function actualizarSlide() {
+  document.getElementById('slider-track').style.transform = `translateX(-${slideIdx*100}%)`;
+  document.querySelectorAll('.sl-dot').forEach((d,i) => d.classList.toggle('active', i===slideIdx));
+}
+function iniciarSlide() { slideTimer = setInterval(() => moverSlide(1), 6000); }
+function resetSlide()   { clearInterval(slideTimer); iniciarSlide(); }
+
+// ════════════════════════════════════════════
+//  CARDS
+// ════════════════════════════════════════════
+function filtradas() {
+  return ALL.filter(n =>
+    (!filterCat || n.categoria === filterCat) &&
+    (!filterQ   || n.titulo.toLowerCase().includes(filterQ) || (n.subtitulo||'').toLowerCase().includes(filterQ)) &&
+    (!mesActivo || n.mes === mesActivo)
+  );
+}
+
+function renderCards() {
+  const list = filtradas();
+  const grid = document.getElementById('cards-grid');
+  const count = document.getElementById('news-count');
+
+  // En inicio sin filtros, el slider ya muestra las 6 primeras
+  const mostrar = (!filterCat && !filterQ && !mesActivo) ? list.slice(6) : list;
+  count.textContent = mostrar.length ? `${mostrar.length} publicaciones` : '';
+
+  if (!mostrar.length) {
+    grid.innerHTML = `<div class="empty-state"><div class="es-icon">📭</div><h3>Sin noticias aquí</h3><p>Prueba otra categoría.</p></div>`;
     return;
   }
-  el.innerHTML = news.map(n => `
-    <div class="ncard" onclick="openModal(${esc(n)})">
-      <div class="cat-label">${n.categoria}</div>
-      <h3>${n.titulo}</h3>
-      <p>${n.resumen||''}</p>
-      <div class="meta"><span>📅 ${n.fecha}</span><span>✍️ ${n.autor}</span></div>
-      <div>${badges(n.tipos)}</div>
-    </div>`).join('');
-}
 
-function badges(tipos) {
-  if (!tipos) return '';
-  return tipos.split(',').map(t => ({
-    texto:  `<span class="mbadge mb-texto">📝 Texto</span>`,
-    imagen: `<span class="mbadge mb-imagen">🖼️ Imagen</span>`,
-    video:  `<span class="mbadge mb-video">🎬 Video</span>`,
-  }[t.trim()]||'')).join('');
-}
-
-function esc(n) {
-  return JSON.stringify(n).replace(/"/g,'&quot;');
-}
-
-// ═══════════════════════════════
-//  HISTÓRICO
-// ═══════════════════════════════
-function buildHistorico(meses) {
-  HIST = {};
-  meses.forEach(m => { HIST[m] = ALL.filter(n => n.mes === m); });
-
-  const el = document.getElementById('hist-list');
-  if (!meses.length) { el.innerHTML = '<span style="color:var(--muted);font-size:0.85rem">Sin histórico disponible.</span>'; return; }
-
-  el.innerHTML = meses.map(mes => {
-    const cnt = (HIST[mes]||[]).length;
-    return `
-      <div class="hmes-item">
-        <button class="hmes-hdr" onclick="toggleHmes(this,'${mes}')">
-          <span>${mes}</span>
-          <span style="display:flex;align-items:center;gap:0.45rem">
-            <span class="cnt">${cnt} noticia${cnt!==1?'s':''}</span>
-            <span class="arr">▶</span>
-          </span>
-        </button>
-        <div class="hmes-list" id="hl-${mes}">
-          ${(HIST[mes]||[]).map(n => `
-            <button class="hmes-link" onclick="openModal(${esc(n)})">${n.titulo}</button>
-          `).join('') || '<span style="padding:0.3rem 0.7rem;font-size:0.78rem;color:var(--muted)">Sin noticias.</span>'}
+  grid.innerHTML = mostrar.map(n => `
+    <div class="ncard" data-cat="${n.categoria}" onclick="abrirModal(${esc(n)})">
+      <div class="ncard-top">
+        <div class="cat-badge">${n.categoria}</div>
+        ${n.portada
+          ? `<img src="${n.portada}" alt="${n.titulo}" onerror="this.remove()">`
+          : `<div class="ncard-top-placeholder">${CAT_EMOJI[n.categoria]||'📰'}</div>`}
+      </div>
+      <div class="ncard-body">
+        <div class="ncard-title">${n.titulo}</div>
+        <div class="ncard-sub">${n.subtitulo || ''}</div>
+        <div class="ncard-footer">
+          <span class="ncard-date">📅 ${n.fecha}</span>
+          <button class="ncard-leer">Leer más →</button>
         </div>
-      </div>`;
-  }).join('');
+      </div>
+    </div>
+  `).join('');
 }
 
-function toggleHmes(btn, mes) {
-  btn.classList.toggle('open');
-  document.getElementById('hl-' + mes)?.classList.toggle('open');
-}
-
-// ═══════════════════════════════
+// ════════════════════════════════════════════
 //  FILTROS
-// ═══════════════════════════════
+// ════════════════════════════════════════════
 function setFilter(cat, btn) {
-  filterCat = cat;
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('section-title').textContent = cat || 'Todas las noticias';
-  renderAll();
+  filterCat = cat; mesActivo = ''; filterQ = '';
+  document.querySelectorAll('.hnav-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  document.getElementById('section-title').textContent = cat || 'Últimas noticias';
+  document.querySelectorAll('.hist-mes-btn').forEach(b => b.classList.remove('active'));
+  renderCards();
 }
 
 function setSearch(q) {
-  filterQ = q.toLowerCase();
-  renderAll();
+  filterQ = q.toLowerCase(); mesActivo = ''; filterCat = '';
+  document.getElementById('section-title').textContent = q ? `Resultados: "${q}"` : 'Últimas noticias';
+  document.querySelectorAll('.hnav-btn').forEach(b => b.classList.remove('active'));
+  renderCards();
 }
 
-// ═══════════════════════════════
+function toggleSearch() {
+  const bar = document.getElementById('search-bar');
+  bar.classList.toggle('open');
+  if (bar.classList.contains('open')) document.getElementById('search-input').focus();
+  else { document.getElementById('search-input').value = ''; setSearch(''); }
+}
+
+// ════════════════════════════════════════════
+//  HISTÓRICO
+// ════════════════════════════════════════════
+function renderHistorico() {
+  const meses = [...new Set(ALL.map(n => n.mes).filter(Boolean))];
+  const sec   = document.getElementById('hist-section');
+  if (!meses.length) { sec.style.display = 'none'; return; }
+  sec.style.display = 'block';
+  document.getElementById('hist-meses').innerHTML = meses.map(m => `
+    <button class="hist-mes-btn" onclick="filtrarMes('${m}',this)">${m}</button>
+  `).join('');
+}
+
+function filtrarMes(mes, btn) {
+  if (mesActivo === mes) {
+    mesActivo = '';
+    btn.classList.remove('active');
+  } else {
+    mesActivo = mes; filterCat = ''; filterQ = '';
+    document.querySelectorAll('.hist-mes-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.hnav-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('section-title').textContent = `Noticias de ${mes}`;
+  }
+  renderCards();
+  document.querySelector('.news-section').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ════════════════════════════════════════════
 //  MODAL
-// ═══════════════════════════════
-function openModal(n) {
-  document.getElementById('m-cat').textContent = n.categoria;
+// ════════════════════════════════════════════
+function abrirModal(n) {
+  const colors = CAT_COLORS[n.categoria] || CAT_COLORS['Noticias Generales'];
+  const pill = document.getElementById('m-cat');
+  pill.textContent = n.categoria;
+  pill.style.background = colors.bg;
+  pill.style.color      = colors.color;
+
   document.getElementById('m-title').textContent = n.titulo;
   document.getElementById('m-meta').innerHTML =
-    `<span>📅 ${n.fecha}</span><span>📁 ${n.mes}</span><span>✍️ ${n.autor}</span>`;
+    `<span>📅 ${n.fecha}</span><span>✍️ ${n.autor}</span><span>📁 ${n.mes}</span>`;
 
   const res = document.getElementById('m-resumen');
-  if (n.resumen) { res.textContent = n.resumen; res.style.display = 'block'; }
+  if (n.subtitulo) { res.textContent = n.subtitulo; res.style.display = 'block'; }
   else res.style.display = 'none';
 
   document.getElementById('m-cuerpo').textContent = 'Cargando contenido…';
+
   fetch(APPS_URL + '?action=cuerpo&id=' + encodeURIComponent(n.id))
     .then(r => r.json())
     .then(c => { document.getElementById('m-cuerpo').textContent = c || 'Sin contenido disponible.'; })
-    .catch(() => { document.getElementById('m-cuerpo').textContent = n.resumen || 'Contenido no disponible.'; });
+    .catch(()  => { document.getElementById('m-cuerpo').textContent = n.subtitulo || 'Contenido no disponible.'; });
 
-  document.getElementById('m-tags').innerHTML = badges(n.tipos);
   const dl = document.getElementById('m-drive');
-  if (n.folderUrl && n.folderUrl !== '#') { dl.href = n.folderUrl; dl.style.display = 'flex'; }
+  if (n.urlDocumento) { dl.href = n.urlDocumento; dl.style.display = 'flex'; }
   else dl.style.display = 'none';
 
   document.getElementById('modal').classList.add('open');
   document.body.style.overflow = 'hidden';
 }
 
-function closeModal(e) {
-  if (e && e.target !== document.getElementById('modal') && !e.target.closest('.mclose')) return;
+function cerrarModal(e) {
+  if (e && e.target !== document.getElementById('modal') && !e.target.closest('.m-close')) return;
   document.getElementById('modal').classList.remove('open');
   document.body.style.overflow = '';
 }
 
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(e); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarModal(e); });
+
+// ════════════════════════════════════════════
+//  UTIL
+// ════════════════════════════════════════════
+function esc(n) { return JSON.stringify(n).replace(/"/g,'&quot;'); }
 </script>
 </body>
 </html>
