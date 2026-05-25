@@ -23,7 +23,6 @@
       --blanco: #ffffff;
       --sombra: rgba(17,17,24,0.08);
 
-      /* Paleta categorías */
       --c-academico:    #dbeafe; --ct-academico:    #1e40af;
       --c-deportes:     #dcfce7; --ct-deportes:     #166534;
       --c-cultura:      #fef3c7; --ct-cultura:      #92400e;
@@ -33,6 +32,7 @@
       --c-directivas:   #fff7ed; --ct-directivas:   #9a3412;
       --c-general:      #f1f5f9; --ct-general:      #334155;
       --c-tecnologia:   #d1fae5; --ct-tecnologia:   #065f46;
+      --c-otro:         #fdf4ff; --ct-otro:         #6b21a8;
 
       --ff-title: 'Playfair Display', Georgia, serif;
       --ff-body:  'Plus Jakarta Sans', system-ui, sans-serif;
@@ -45,7 +45,6 @@
     img { display: block; }
     button { cursor: pointer; font-family: var(--ff-body); }
 
-    /* ── TOPBAR ── */
     .topbar {
       background: var(--rojo); color: white;
       display: flex; align-items: center; justify-content: space-between;
@@ -54,7 +53,6 @@
     }
     .topbar-right { opacity: 0.85; }
 
-    /* ── HEADER ── */
     .site-header {
       background: var(--blanco);
       border-bottom: 1px solid var(--gris2);
@@ -70,7 +68,6 @@
     .logo-name { font-family: var(--ff-title); font-size: 1.7rem; font-weight: 900; color: var(--rojo); letter-spacing: -0.03em; line-height: 1; }
     .logo-sub { font-size: 0.62rem; color: var(--gris3); margin-top: 0.15rem; }
 
-    /* NAV */
     .header-nav { display: flex; align-items: center; gap: 0.2rem; flex: 1; margin-left: 1.5rem; }
     .hnav-btn {
       font-size: 0.78rem; font-weight: 600; color: var(--gris3);
@@ -87,7 +84,6 @@
     }
     .header-search-btn:hover { background: var(--rojo); }
 
-    /* Search bar expandible */
     .search-bar {
       background: var(--blanco); border-bottom: 1px solid var(--gris2);
       padding: 0.8rem 2rem; display: none; align-items: center; gap: 0.8rem;
@@ -101,7 +97,6 @@
     .search-bar input:focus { border-color: var(--rojo); }
     .search-close { font-size: 1.1rem; color: var(--gris3); background: none; border: none; padding: 0.2rem; }
 
-    /* ── HERO EDITORIAL ── */
     .hero-section {
       background: var(--blanco); padding: 3rem 2rem 3.5rem;
       border-bottom: 1px solid var(--gris2);
@@ -123,7 +118,6 @@
       max-width: 460px; margin-bottom: 2.5rem;
     }
 
-    /* SLIDER dentro del hero */
     .slider-wrap { position: relative; overflow: hidden; border-radius: var(--radius); }
     .slider-track { display: flex; transition: transform 0.55s cubic-bezier(0.77,0,0.175,1); }
     .slide-item {
@@ -165,7 +159,6 @@
     }
     .leer-mas:hover { gap: 0.55rem; }
 
-    /* Controles slider */
     .slider-controls {
       display: flex; align-items: center; gap: 0.7rem; margin-top: 1.2rem;
     }
@@ -183,7 +176,6 @@
     .sl-btn + .sl-btn { margin-left: 0.4rem; }
     .sl-btn:hover { background: var(--rojo); color: white; border-color: var(--rojo); }
 
-    /* ── SECCIÓN NOTICIAS ── */
     .news-section { max-width: 1180px; margin: 0 auto; padding: 3rem 2rem 5rem; }
 
     .section-head {
@@ -197,14 +189,12 @@
     }
     .section-head .sh-count { font-size: 0.78rem; color: var(--gris3); }
 
-    /* GRID MASONRY-STYLE */
     .cards-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 1.4rem;
     }
 
-    /* Card base */
     .ncard {
       background: var(--blanco); border-radius: var(--radius);
       overflow: hidden; cursor: pointer;
@@ -214,7 +204,6 @@
     }
     .ncard:hover { transform: translateY(-5px); box-shadow: 0 16px 40px var(--sombra); }
 
-    /* Imagen / Color top */
     .ncard-top {
       height: 190px; position: relative; overflow: hidden;
       display: flex; align-items: center; justify-content: center;
@@ -226,35 +215,35 @@
       font-style: italic; opacity: 0.18; letter-spacing: -0.03em;
       color: var(--ct);
     }
-    /* color del fondo por categoría */
-    .ncard[data-cat="Académico"]        .ncard-top { background: var(--c-academico); }
-    .ncard[data-cat="Deportes"]         .ncard-top { background: var(--c-deportes); }
-    .ncard[data-cat="Cultura y Arte"]   .ncard-top { background: var(--c-cultura); }
-    .ncard[data-cat="Comunidad"]        .ncard-top { background: var(--c-comunidad); }
-    .ncard[data-cat="Reconocimientos"]  .ncard-top { background: var(--c-reconoc); }
-    .ncard[data-cat="Proyectos"]        .ncard-top { background: var(--c-proyectos); }
-    .ncard[data-cat="Directivas"]       .ncard-top { background: var(--c-directivas); }
-    .ncard[data-cat="Tecnología"]       .ncard-top { background: var(--c-tecnologia); }
-    .ncard[data-cat="Noticias Generales"] .ncard-top { background: var(--c-general); }
 
-    /* Badge categoría */
+    .ncard[data-cat="Académico"]          .ncard-top { background: var(--c-academico); }
+    .ncard[data-cat="Deportes"]           .ncard-top { background: var(--c-deportes); }
+    .ncard[data-cat="Cultura y Arte"]     .ncard-top { background: var(--c-cultura); }
+    .ncard[data-cat="Comunidad"]          .ncard-top { background: var(--c-comunidad); }
+    .ncard[data-cat="Reconocimientos"]    .ncard-top { background: var(--c-reconoc); }
+    .ncard[data-cat="Proyectos"]          .ncard-top { background: var(--c-proyectos); }
+    .ncard[data-cat="Directivas"]         .ncard-top { background: var(--c-directivas); }
+    .ncard[data-cat="Tecnología"]         .ncard-top { background: var(--c-tecnologia); }
+    .ncard[data-cat="Noticias Generales"] .ncard-top { background: var(--c-general); }
+    .ncard[data-cat="Otro"]               .ncard-top { background: var(--c-otro); }
+
     .cat-badge {
       position: absolute; top: 0.8rem; left: 0.8rem; z-index: 2;
       font-size: 0.6rem; font-weight: 700; letter-spacing: 0.12em;
       text-transform: uppercase; padding: 0.25rem 0.65rem;
       border-radius: 100px;
     }
-    .ncard[data-cat="Académico"]        .cat-badge { background:var(--c-academico); color:var(--ct-academico); }
-    .ncard[data-cat="Deportes"]         .cat-badge { background:var(--c-deportes);  color:var(--ct-deportes);  }
-    .ncard[data-cat="Cultura y Arte"]   .cat-badge { background:var(--c-cultura);   color:var(--ct-cultura);   }
-    .ncard[data-cat="Comunidad"]        .cat-badge { background:var(--c-comunidad); color:var(--ct-comunidad); }
-    .ncard[data-cat="Reconocimientos"]  .cat-badge { background:var(--c-reconoc);   color:var(--ct-reconoc);   }
-    .ncard[data-cat="Proyectos"]        .cat-badge { background:var(--c-proyectos); color:var(--ct-proyectos); }
-    .ncard[data-cat="Directivas"]       .cat-badge { background:var(--c-directivas);color:var(--ct-directivas);}
-    .ncard[data-cat="Tecnología"]       .cat-badge { background:var(--c-tecnologia);color:var(--ct-tecnologia);}
-    .ncard[data-cat="Noticias Generales"] .cat-badge { background:var(--c-general); color:var(--ct-general);   }
+    .ncard[data-cat="Académico"]          .cat-badge { background:var(--c-academico); color:var(--ct-academico); }
+    .ncard[data-cat="Deportes"]           .cat-badge { background:var(--c-deportes);  color:var(--ct-deportes);  }
+    .ncard[data-cat="Cultura y Arte"]     .cat-badge { background:var(--c-cultura);   color:var(--ct-cultura);   }
+    .ncard[data-cat="Comunidad"]          .cat-badge { background:var(--c-comunidad); color:var(--ct-comunidad); }
+    .ncard[data-cat="Reconocimientos"]    .cat-badge { background:var(--c-reconoc);   color:var(--ct-reconoc);   }
+    .ncard[data-cat="Proyectos"]          .cat-badge { background:var(--c-proyectos); color:var(--ct-proyectos); }
+    .ncard[data-cat="Directivas"]         .cat-badge { background:var(--c-directivas);color:var(--ct-directivas);}
+    .ncard[data-cat="Tecnología"]         .cat-badge { background:var(--c-tecnologia);color:var(--ct-tecnologia);}
+    .ncard[data-cat="Noticias Generales"] .cat-badge { background:var(--c-general);   color:var(--ct-general);   }
+    .ncard[data-cat="Otro"]               .cat-badge { background:var(--c-otro);       color:var(--ct-otro);      }
 
-    /* Cuerpo card */
     .ncard-body { padding: 1.2rem 1.3rem 1.4rem; flex: 1; display: flex; flex-direction: column; }
     .ncard-title {
       font-family: var(--ff-title); font-size: 1.05rem; font-weight: 700;
@@ -275,7 +264,6 @@
     }
     .ncard-leer:hover { gap: 0.45rem; }
 
-    /* Histórico */
     .hist-section {
       background: var(--blanco); border-top: 1px solid var(--gris2);
       padding: 2.5rem 2rem;
@@ -294,7 +282,6 @@
     }
     .hist-mes-btn:hover, .hist-mes-btn.active { background: var(--rojo); color: white; border-color: var(--rojo); }
 
-    /* Banner suscripción */
     .suscribe-banner {
       background: var(--rojo); padding: 1.1rem 2rem;
       display: flex; align-items: center; gap: 1.2rem; flex-wrap: wrap;
@@ -310,14 +297,12 @@
     }
     .suscribe-btn:hover { background: var(--negro); color: white; }
 
-    /* Empty / Loading */
     .empty-state {
       grid-column: 1 / -1; text-align: center; padding: 5rem 2rem; color: var(--gris3);
     }
     .empty-state .es-icon { font-size: 3rem; margin-bottom: 0.8rem; }
     .empty-state h3 { font-family: var(--ff-title); font-size: 1.4rem; color: var(--negro); margin-bottom: 0.4rem; }
 
-    /* Carga inicial */
     #init-screen {
       position: fixed; inset: 0; background: var(--blanco);
       display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -332,10 +317,7 @@
     }
     @keyframes sp { to { transform: rotate(360deg); } }
 
-    /* Footer */
-    footer {
-      background: var(--negro); padding: 2.5rem 2rem 1.5rem;
-    }
+    footer { background: var(--negro); padding: 2.5rem 2rem 1.5rem; }
     .footer-inner {
       max-width: 1180px; margin: 0 auto;
       display: flex; align-items: center; justify-content: space-between;
@@ -347,7 +329,6 @@
     .footer-brand .fb-name em { font-style: italic; color: var(--rojo2); }
     .footer-right { font-size: 0.75rem; color: rgba(255,255,255,0.25); text-align: right; line-height: 1.8; }
 
-    /* Modal */
     .modal-overlay {
       position: fixed; inset: 0; background: rgba(10,10,18,0.78);
       backdrop-filter: blur(8px); display: none; align-items: flex-start;
@@ -397,7 +378,6 @@
     }
     .m-drive-link:hover { text-decoration: underline; }
 
-    /* Responsive */
     @media (max-width: 900px) {
       .cards-grid { grid-template-columns: repeat(2, 1fr); }
       .slide-item { grid-template-columns: 1fr; min-height: auto; }
@@ -416,20 +396,17 @@
 </head>
 <body>
 
-<!-- CARGA -->
 <div id="init-screen">
   <img class="init-logo" src="https://www.feyalegrialacima.edu.co/img/I.E.Fe_y_Alegria_La_Cima.png" alt="" onerror="this.style.display='none'">
   <div class="init-name">La Cima</div>
   <div class="init-spin"></div>
 </div>
 
-<!-- TOPBAR -->
 <div class="topbar">
   <span id="topbar-date"></span>
   <span class="topbar-right">Fe y Alegría &bull; Medellín</span>
 </div>
 
-<!-- HEADER -->
 <header class="site-header">
   <a class="logo-wrap" href="#">
     <img class="logo-img" src="https://www.feyalegrialacima.edu.co/img/I.E.Fe_y_Alegria_La_Cima.png" alt="Logo" onerror="this.style.display='none'">
@@ -441,43 +418,36 @@
   </a>
   <nav class="header-nav">
     <button class="hnav-btn active" onclick="setFilter('',this)">Inicio</button>
+    <button class="hnav-btn" onclick="setFilter('Noticias Generales',this)">Noticias Generales</button>
     <button class="hnav-btn" onclick="setFilter('Académico',this)">Académico</button>
     <button class="hnav-btn" onclick="setFilter('Deportes',this)">Deportes</button>
-    <button class="hnav-btn" onclick="setFilter('Cultura y Arte',this)">Cultura</button>
+    <button class="hnav-btn" onclick="setFilter('Cultura y Arte',this)">Cultura y Arte</button>
     <button class="hnav-btn" onclick="setFilter('Comunidad',this)">Comunidad</button>
-    <button class="hnav-btn" onclick="setFilter('Tecnología',this)">Tecnología</button>
-    <button class="hnav-btn" onclick="setFilter('Arte',this)">Arte</button>
-    <button class="hnav-btn" onclick="setFilter('Eventos',this)">Eventos</button>
+    <button class="hnav-btn" onclick="setFilter('Reconocimientos',this)">Reconocimientos</button>
+    <button class="hnav-btn" onclick="setFilter('Proyectos',this)">Proyectos</button>
+    <button class="hnav-btn" onclick="setFilter('Directivas',this)">Directivas</button>
+    <button class="hnav-btn" onclick="setFilter('Otro',this)">Otro</button>
   </nav>
   <button class="header-search-btn" onclick="toggleSearch()">🔍</button>
 </header>
 
-<!-- SEARCH BAR -->
 <div class="search-bar" id="search-bar">
   <input type="text" id="search-input" placeholder="Buscar noticias…" oninput="setSearch(this.value)" autofocus>
   <button class="search-close" onclick="toggleSearch()">✕</button>
 </div>
 
-<!-- HERO -->
 <section class="hero-section">
   <div class="hero-inner">
     <div class="hero-label">Periódico Escolar</div>
     <h1 class="hero-title">Noticias que<br>nos inspiran</h1>
     <p class="hero-sub">Entérate de todo lo que sucede en nuestra comunidad educativa.</p>
-
-    <!-- SLIDER -->
     <div class="slider-wrap" id="slider-wrap">
-      <div class="slider-track" id="slider-track">
-        <!-- JS -->
-      </div>
+      <div class="slider-track" id="slider-track"></div>
     </div>
-    <div class="slider-controls" id="slider-controls">
-      <!-- dots + botones -->
-    </div>
+    <div class="slider-controls" id="slider-controls"></div>
   </div>
 </section>
 
-<!-- BANNER SUSCRIPCIÓN -->
 <div class="suscribe-banner">
   <span class="sb-icon">✉️</span>
   <div class="sb-text">
@@ -487,7 +457,6 @@
   <button class="suscribe-btn">Suscribirme</button>
 </div>
 
-<!-- NOTICIAS -->
 <section class="news-section">
   <div class="section-head">
     <h2 id="section-title">Últimas noticias</h2>
@@ -501,7 +470,6 @@
   </div>
 </section>
 
-<!-- HISTÓRICO -->
 <div class="hist-section" id="hist-section" style="display:none">
   <div class="hist-inner">
     <h3>📁 Histórico por mes</h3>
@@ -509,7 +477,6 @@
   </div>
 </div>
 
-<!-- FOOTER -->
 <footer>
   <div class="footer-inner">
     <div class="footer-brand">
@@ -523,7 +490,6 @@
   </div>
 </footer>
 
-<!-- MODAL -->
 <div class="modal-overlay" id="modal" onclick="cerrarModal(event)">
   <div class="modal">
     <div class="m-header">
@@ -544,32 +510,26 @@
 </div>
 
 <script>
-// ════════════════════════════════════════════
-//  CONFIG
-// ════════════════════════════════════════════
 const APPS_URL = 'https://script.google.com/macros/s/AKfycbwjLxGNP_llPDu9L0GpC-zYdgHbgDFzRXDXuTNcjkNYXoV_iQ2Xz24_YEFJdi7enxvcow/exec';
 
-// Colores categoría para modal pill
 const CAT_COLORS = {
-  'Académico':         { bg:'#dbeafe', color:'#1e40af' },
-  'Deportes':          { bg:'#dcfce7', color:'#166534' },
-  'Cultura y Arte':    { bg:'#fef3c7', color:'#92400e' },
-  'Comunidad':         { bg:'#fce7f3', color:'#9d174d' },
-  'Reconocimientos':   { bg:'#ede9fe', color:'#5b21b6' },
-  'Proyectos':         { bg:'#e0f2fe', color:'#075985' },
-  'Directivas':        { bg:'#fff7ed', color:'#9a3412' },
-  'Tecnología':        { bg:'#d1fae5', color:'#065f46' },
-  'Noticias Generales':{ bg:'#f1f5f9', color:'#334155' },
+  'Académico':          { bg:'#dbeafe', color:'#1e40af' },
+  'Deportes':           { bg:'#dcfce7', color:'#166534' },
+  'Cultura y Arte':     { bg:'#fef3c7', color:'#92400e' },
+  'Comunidad':          { bg:'#fce7f3', color:'#9d174d' },
+  'Reconocimientos':    { bg:'#ede9fe', color:'#5b21b6' },
+  'Proyectos':          { bg:'#e0f2fe', color:'#075985' },
+  'Directivas':         { bg:'#fff7ed', color:'#9a3412' },
+  'Tecnología':         { bg:'#d1fae5', color:'#065f46' },
+  'Noticias Generales': { bg:'#f1f5f9', color:'#334155' },
+  'Otro':               { bg:'#fdf4ff', color:'#6b21a8' },
 };
 const CAT_EMOJI = {
   'Académico':'📚','Deportes':'⚽','Cultura y Arte':'🎨','Comunidad':'🤝',
   'Reconocimientos':'🏆','Proyectos':'🚀','Directivas':'📢',
-  'Tecnología':'💻','Noticias Generales':'🗞️',
+  'Tecnología':'💻','Noticias Generales':'🗞️','Otro':'📌',
 };
 
-// ════════════════════════════════════════════
-//  ESTADO
-// ════════════════════════════════════════════
 let ALL        = [];
 let filterCat  = '';
 let filterQ    = '';
@@ -577,9 +537,6 @@ let slideIdx   = 0;
 let slideTimer = null;
 let mesActivo  = '';
 
-// ════════════════════════════════════════════
-//  INIT
-// ════════════════════════════════════════════
 window.addEventListener('load', () => {
   const d = new Date();
   document.getElementById('topbar-date').textContent =
@@ -605,9 +562,6 @@ function ocultarCarga() {
   setTimeout(() => el.style.display = 'none', 450);
 }
 
-// ════════════════════════════════════════════
-//  SLIDER
-// ════════════════════════════════════════════
 function renderSlider() {
   const items = ALL.slice(0, 6);
   if (!items.length) { document.getElementById('slider-wrap').style.display = 'none'; return; }
@@ -632,7 +586,6 @@ function renderSlider() {
     </div>
   `).join('');
 
-  // Controles
   const ctrl = document.getElementById('slider-controls');
   ctrl.innerHTML =
     items.map((_,i) => `<button class="sl-dot ${i===0?'active':''}" onclick="irSlide(${i})"></button>`).join('') +
@@ -656,9 +609,6 @@ function actualizarSlide() {
 function iniciarSlide() { slideTimer = setInterval(() => moverSlide(1), 6000); }
 function resetSlide()   { clearInterval(slideTimer); iniciarSlide(); }
 
-// ════════════════════════════════════════════
-//  CARDS
-// ════════════════════════════════════════════
 function filtradas() {
   return ALL.filter(n =>
     (!filterCat || n.categoria === filterCat) &&
@@ -672,7 +622,6 @@ function renderCards() {
   const grid = document.getElementById('cards-grid');
   const count = document.getElementById('news-count');
 
-  // En inicio sin filtros, el slider ya muestra las 6 primeras
   const mostrar = (!filterCat && !filterQ && !mesActivo) ? list.slice(6) : list;
   count.textContent = mostrar.length ? `${mostrar.length} publicaciones` : '';
 
@@ -701,9 +650,6 @@ function renderCards() {
   `).join('');
 }
 
-// ════════════════════════════════════════════
-//  FILTROS
-// ════════════════════════════════════════════
 function setFilter(cat, btn) {
   filterCat = cat; mesActivo = ''; filterQ = '';
   document.querySelectorAll('.hnav-btn').forEach(b => b.classList.remove('active'));
@@ -727,9 +673,6 @@ function toggleSearch() {
   else { document.getElementById('search-input').value = ''; setSearch(''); }
 }
 
-// ════════════════════════════════════════════
-//  HISTÓRICO
-// ════════════════════════════════════════════
 function renderHistorico() {
   const meses = [...new Set(ALL.map(n => n.mes).filter(Boolean))];
   const sec   = document.getElementById('hist-section');
@@ -755,9 +698,6 @@ function filtrarMes(mes, btn) {
   document.querySelector('.news-section').scrollIntoView({ behavior: 'smooth' });
 }
 
-// ════════════════════════════════════════════
-//  MODAL
-// ════════════════════════════════════════════
 function abrirModal(n) {
   const colors = CAT_COLORS[n.categoria] || CAT_COLORS['Noticias Generales'];
   const pill = document.getElementById('m-cat');
@@ -796,9 +736,6 @@ function cerrarModal(e) {
 
 document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarModal(e); });
 
-// ════════════════════════════════════════════
-//  UTIL
-// ════════════════════════════════════════════
 function esc(n) { return JSON.stringify(n).replace(/"/g,'&quot;'); }
 </script>
 </body>
