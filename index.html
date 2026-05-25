@@ -617,13 +617,20 @@ function filtradas() {
   );
 }
 
+// ====== CÓDIGO NUEVO ======
 function renderCards() {
   const list = filtradas();
   const grid = document.getElementById('cards-grid');
   const count = document.getElementById('news-count');
 
-  const mostrar = (!filterCat && !filterQ && !mesActivo) ? list.slice(6) : list;
+  let mostrar = list;
+
+  if (!filterCat && !filterQ && !mesActivo && list.length > 6) {
+    mostrar = list.slice(6);
+  }
+
   count.textContent = mostrar.length ? `${mostrar.length} publicaciones` : '';
+
 
   if (!mostrar.length) {
     grid.innerHTML = `<div class="empty-state"><div class="es-icon">📭</div><h3>Sin noticias aquí</h3><p>Prueba otra categoría.</p></div>`;
