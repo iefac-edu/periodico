@@ -164,7 +164,6 @@ tbody td{padding:12px 16px;color:var(--ink);vertical-align:middle}
 #loading-overlay .load-spinner{width:48px;height:48px;border:3px solid rgba(255,255,255,0.2);border-top-color:var(--gold);border-radius:50%;animation:spin 0.8s linear infinite}
 #loading-overlay .load-msg{color:white;font-size:0.95rem}
 
-/* Archivos grandes: advertencia */
 .upload-warning{background:rgba(212,160,23,0.1);border:1px solid var(--gold);border-radius:8px;padding:10px 14px;font-size:0.82rem;color:#7a5c00;margin-top:8px;display:none}
 .upload-warning.show{display:block}
 
@@ -321,37 +320,7 @@ tbody td{padding:12px 16px;color:var(--ink);vertical-align:middle}
           </div>
         </div>
       </div>
-      <div class="ia-preview" id="ia-preview">
-        <div class="ia-preview-header">
-          <div class="ia-emoji" id="ia-emoji">✨</div>
-          <div>
-            <div style="font-family:var(--font-head);font-size:1.1rem;font-weight:700;color:var(--ink);margin-bottom:4px">Noticia generada por IA</div>
-            <div class="ia-badge">IA · Fe y Alegría La Cima</div>
-          </div>
-        </div>
-        <div class="ia-field"><label>Título</label><input type="text" id="ia-titulo"></div>
-        <div class="ia-field"><label>Subtítulo</label><input type="text" id="ia-subtitulo"></div>
-        <div class="ia-field">
-          <label>Categoría</label>
-          <select id="ia-categoria">
-            <option value="Noticias Generales">🗞️ Noticias Generales</option>
-            <option value="Académico">📚 Académico</option>
-            <option value="Deportes">⚽ Deportes</option>
-            <option value="Cultura y Arte">🎨 Cultura y Arte</option>
-            <option value="Comunidad">🤝 Comunidad</option>
-            <option value="Reconocimientos">🏆 Reconocimientos</option>
-            <option value="Proyectos">🚀 Proyectos</option>
-            <option value="Directivas">📢 Directivas</option>
-          </select>
-        </div>
-        <div class="ia-field"><label>Autor</label><input type="text" id="ia-autor" value="Redacción La Cima"></div>
-        <div class="ia-field"><label>Cuerpo de la noticia</label><textarea id="ia-cuerpo" style="min-height:200px"></textarea></div>
-        <div class="ia-actions">
-          <button class="btn btn-ghost" onclick="generarConIA()">🔄 Regenerar</button>
-          <button class="btn btn-draft" onclick="publicarIANoticia(false)">💾 Borrador</button>
-          <button class="btn btn-publish" onclick="publicarIANoticia(true)">🚀 Publicar</button>
-        </div>
-      </div>
+      <div class="ia-preview" id="ia-preview"></div>
     </section>
 
     <!-- DASHBOARD -->
@@ -382,99 +351,116 @@ tbody td{padding:12px 16px;color:var(--ink);vertical-align:middle}
 <script>
 // ══════════════════════════════════════════════════════
 //  CONFIGURACIÓN
+//  ⚠️  IMPORTANTE: esta URL debe ser la de tu Web App
+//      publicada como "Cualquier usuario" en Apps Script
 // ══════════════════════════════════════════════════════
 const APPS_URL = 'https://script.google.com/macros/s/AKfycbwjLxGNP_llPDu9L0GpC-zYdgHbgDFzRXDXuTNcjkNYXoV_iQ2Xz24_YEFJdi7enxvcow/exec';
 
-// ══ ESTADO ══
+// ── ESTADO ──
 let sesionActual          = null;
 let tokenActual           = '';
 let archivosSeleccionados = [];
 let noticiasCache         = [];
 let eventoSeleccionado    = null;
-let noticiaIAActual       = null;
 
 // ══════════════════════════════════════════════════════
-//  JSONP — ÚNICO MÉTODO DE COMUNICACIÓN CON APPS SCRIPT
+//  CORE: LLAMADA JSONP
 //
-//  Apps Script (google.com → googleusercontent.com) no
-//  incluye CORS en la respuesta final, así que fetch()
-//  siempre falla con "No 'Access-Control-Allow-Origin'".
-//  JSONP inyecta un <script> que Apps Script devuelve
-//  envuelto en el callback, saltando completamente CORS.
+//  Apps Script no permite headers CORS personalizados,
+//  así que usamos JSONP: inyectamos un <script> cuya URL
+//  incluye ?callback=_gs_XXX y Apps Script devuelve
+//  _gs_XXX({...datos...}) que ejecuta nuestro callback.
 //
-//  TODAS las llamadas (GET y simuladas-POST) usan JSONP.
-//  Los datos "POST" viajan como parámetros GET codificados
-//  (base64 para el cuerpo), ya que JSONP solo soporta GET.
+//  Requisitos en Apps Script (doGet):
+//    1. Leer e.parameter.callback
+//    2. Si existe, envolver la respuesta: callback + '(' + json + ')'
+//    3. Usar MimeType.JAVASCRIPT (no JSON)
+//
+//  Requisitos en la publicación de la Web App:
+//    → Ejecutar como: Yo (cuenta propietaria)
+//    → Quién tiene acceso: CUALQUIER USUARIO  ← crítico
 // ══════════════════════════════════════════════════════
+function callAPI(params, timeoutMs) {
+  timeoutMs = timeoutMs || 45000;
 
-/**
- * Llama a Apps Script via JSONP.
- * @param {Object} params  - pares clave/valor para la query string
- * @param {number} timeout - ms antes de rechazar (default 30s)
- */
-function jsonp(params, timeout) {
-  timeout = timeout || 30000;
   return new Promise(function(resolve, reject) {
-    var cbName = '_cb' + Date.now() + Math.floor(Math.random() * 9999);
-    var script = document.createElement('script');
-    var timer = setTimeout(function() {
-      cleanup();
-      reject(new Error('Timeout: Apps Script tardó demasiado.'));
-    }, timeout);
+    // Nombre único para el callback global
+    var cbName = '_gs_' + Date.now() + '_' + Math.floor(Math.random() * 99999);
+    var script, timer;
 
     function cleanup() {
       clearTimeout(timer);
-      delete window[cbName];
-      if (script.parentNode) script.parentNode.removeChild(script);
+      try { delete window[cbName]; } catch(e) { window[cbName] = undefined; }
+      if (script && script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
     }
 
+    // Timeout de seguridad
+    timer = setTimeout(function() {
+      cleanup();
+      reject(new Error(
+        'Tiempo de espera agotado (' + (timeoutMs/1000) + 's). ' +
+        'Verifica que la Web App esté publicada como "Cualquier usuario".'
+      ));
+    }, timeoutMs);
+
+    // Función callback que Apps Script invocará
     window[cbName] = function(data) {
       cleanup();
       resolve(data);
     };
 
-    var u = new URL(APPS_URL);
-    u.searchParams.set('callback', cbName);
+    // Construir URL con parámetros + callback
+    var url = new URL(APPS_URL);
+    url.searchParams.set('callback', cbName);
     Object.keys(params).forEach(function(k) {
-      u.searchParams.set(k, String(params[k]));
+      url.searchParams.set(k, String(params[k]));
     });
 
-    script.src = u.toString();
+    // Verificar longitud de URL antes de enviar
+    if (url.toString().length > 8000) {
+      cleanup();
+      reject(new Error(
+        'La URL es demasiado larga (' + url.toString().length + ' chars). ' +
+        'Reduce el tamaño del contenido o elimina los archivos adjuntos.'
+      ));
+      return;
+    }
+
+    // Inyectar script — usar body para mayor compatibilidad
+    script = document.createElement('script');
+    script.src = url.toString();
     script.onerror = function() {
       cleanup();
-      reject(new Error('Error de red al cargar el script JSONP.'));
+      reject(new Error(
+        'No se pudo conectar con Apps Script. ' +
+        'Posibles causas:\n' +
+        '1. La Web App no está publicada como "Cualquier usuario"\n' +
+        '2. La URL de APPS_URL es incorrecta\n' +
+        '3. Sin conexión a internet'
+      ));
     };
-    document.head.appendChild(script);
+    document.body.appendChild(script);
   });
 }
 
-/**
- * Llama a una acción de lectura/autenticación.
- * Los datos van directamente como parámetros GET.
- */
+// Lectura (timeout corto)
 function api(params) {
-  return jsonp(params, 20000);
+  return callAPI(params, 25000);
 }
 
-/**
- * Llama a una acción de escritura (publicar, cambiar estado, etc.).
- *
- * El problema: los payloads con archivos en base64 pueden superar
- * el límite de URL (~8000 chars). Solución:
- *   - Para acciones sin archivos → JSONP GET normal.
- *   - Para publicarNoticia con archivos → se envía el cuerpo
- *     dividido en partes, referenciando un "chunkId" temporal
- *     almacenado en Apps Script via PropertiesService.
- *
- * Versión simplificada: enviamos todo en GET. Apps Script
- * acepta el campo `payload` como JSON codificado en base64.
- * Si el payload supera 6000 chars, rechazamos y pedimos al
- * usuario que quite los archivos.
- */
+// Escritura (timeout largo para operaciones pesadas)
 function apiWrite(params, timeoutMs) {
-  timeoutMs = timeoutMs || 60000;  // escritura puede tardar más
-  return jsonp(params, timeoutMs);
+  return callAPI(params, timeoutMs || 60000);
 }
+
+// ══ FIX URL: quitar /u/0/ si viene en la URL ══
+(function() {
+  var url = window.location.href;
+  var fixed = url.replace(/\/macros\/u\/\d+\/s\//, '/macros/s/');
+  if (fixed !== url) window.location.replace(fixed);
+})();
 
 // ══ LOGIN ══
 window.addEventListener('load', function() {
@@ -486,41 +472,50 @@ window.addEventListener('load', function() {
 });
 
 async function verificarAcceso() {
-  var email = (document.getElementById('input-email').value||'').trim();
-  var token = (document.getElementById('input-token').value||'').trim();
+  var email = (document.getElementById('input-email').value || '').trim();
+  var token = (document.getElementById('input-token').value || '').trim();
   var msg   = document.getElementById('msg-acceso');
   var btn   = document.getElementById('btn-entrar');
+
   if (!email || !token) {
     msg.style.color = '#e74c3c';
     msg.textContent = '⚠️ Completa el correo y la clave.';
     return;
   }
+
   btn.disabled = true;
   btn.textContent = 'Verificando...';
   msg.style.color = 'rgba(255,255,255,0.5)';
-  msg.textContent = '';
+  msg.textContent = 'Conectando con el servidor...';
+
   try {
-    var res = await api({ action: 'verificarToken', email: email, token: token });
+    var res = await api({
+      action: 'verificarToken',
+      email:  email,
+      token:  token
+    });
+
     btn.disabled = false;
     btn.textContent = 'Entrar al panel →';
-    if (res.ok) {
+
+    if (res && res.ok) {
       sesionActual = res;
       tokenActual  = token;
       iniciarApp();
     } else {
       var errores = {
-        usuario_no_autorizado: '❌ Correo sin acceso.',
-        token_invalido: '❌ Clave incorrecta.',
-        sin_datos: '⚠️ Completa todo.'
+        usuario_no_autorizado: '❌ Correo sin acceso al panel.',
+        token_invalido:        '❌ Clave incorrecta.',
+        sin_datos:             '⚠️ Completa todos los campos.'
       };
       msg.style.color = '#e74c3c';
-      msg.textContent = errores[res.razon] || ('❌ ' + (res.razon || 'Error desconocido'));
+      msg.textContent = (res && errores[res.razon]) || ('❌ Error: ' + (res && res.razon || 'desconocido'));
     }
   } catch(err) {
     btn.disabled = false;
     btn.textContent = 'Entrar al panel →';
     msg.style.color = '#e74c3c';
-    msg.textContent = '❌ Error de conexión: ' + err.message;
+    msg.textContent = '❌ ' + err.message;
   }
 }
 
@@ -531,7 +526,7 @@ function iniciarApp() {
     p.style.display = 'none';
     var app = document.getElementById('app');
     app.style.display = 'flex';
-    document.getElementById('user-email').textContent = sesionActual.email;
+    document.getElementById('user-email').textContent  = sesionActual.email;
     document.getElementById('user-avatar').textContent = sesionActual.email[0].toUpperCase();
     inicializarFormulario();
     cargarNoticias();
@@ -542,8 +537,8 @@ function iniciarApp() {
 // ══ NAV ══
 document.querySelectorAll('.nav-tab').forEach(function(tab) {
   tab.addEventListener('click', function() {
-    document.querySelectorAll('.nav-tab').forEach(function(t) { t.classList.remove('active'); });
-    document.querySelectorAll('.section').forEach(function(s) { s.classList.remove('active'); });
+    document.querySelectorAll('.nav-tab').forEach(function(t)    { t.classList.remove('active'); });
+    document.querySelectorAll('.section').forEach(function(s)    { s.classList.remove('active'); });
     tab.classList.add('active');
     var sec = document.getElementById('sec-' + tab.dataset.tab);
     if (sec) sec.classList.add('active');
@@ -589,8 +584,8 @@ function inicializarFormulario() {
     Array.from(e.target.files).forEach(function(f) { agregarArchivo(f); });
     fi.value = '';
   });
-  uz.addEventListener('dragover', function(e) { e.preventDefault(); uz.classList.add('drag-over'); });
-  uz.addEventListener('dragleave', function() { uz.classList.remove('drag-over'); });
+  uz.addEventListener('dragover',  function(e) { e.preventDefault(); uz.classList.add('drag-over'); });
+  uz.addEventListener('dragleave', function()  { uz.classList.remove('drag-over'); });
   uz.addEventListener('drop', function(e) {
     e.preventDefault();
     uz.classList.remove('drag-over');
@@ -604,10 +599,7 @@ function agregarArchivo(file) {
   if (file.size > max) { mostrarToast(file.name + ': archivo muy grande', 'error'); return; }
   archivosSeleccionados.push(file);
   renderizarArchivos();
-  // advertencia si hay archivos (base64 puede hacer la URL muy larga)
-  var warning = document.getElementById('upload-warning');
-  if (archivosSeleccionados.length > 0) warning.classList.add('show');
-  else warning.classList.remove('show');
+  document.getElementById('upload-warning').classList.add('show');
 }
 
 function renderizarArchivos() {
@@ -617,7 +609,11 @@ function renderizarArchivos() {
     var icon = f.type.startsWith('image/') ? '🖼️' : f.type.startsWith('video/') ? '🎬' : '📄';
     var chip = document.createElement('div');
     chip.className = 'file-chip';
-    chip.innerHTML = '<span>' + icon + '</span><span class="fname" title="' + f.name + '">' + f.name + '</span><span class="fsize">' + formatBytes(f.size) + '</span><span class="remove-file" onclick="removerArchivo(' + i + ')">✕</span>';
+    chip.innerHTML =
+      '<span>' + icon + '</span>' +
+      '<span class="fname" title="' + f.name + '">' + f.name + '</span>' +
+      '<span class="fsize">' + formatBytes(f.size) + '</span>' +
+      '<span class="remove-file" onclick="removerArchivo(' + i + ')">✕</span>';
     p.appendChild(chip);
   });
 }
@@ -625,8 +621,9 @@ function renderizarArchivos() {
 function removerArchivo(idx) {
   archivosSeleccionados.splice(idx, 1);
   renderizarArchivos();
-  var warning = document.getElementById('upload-warning');
-  if (archivosSeleccionados.length === 0) warning.classList.remove('show');
+  if (archivosSeleccionados.length === 0) {
+    document.getElementById('upload-warning').classList.remove('show');
+  }
 }
 
 function limpiarFormulario() {
@@ -645,18 +642,16 @@ function limpiarFormulario() {
 }
 
 // ── GUARDAR NOTICIA ──
-// JSONP solo soporta GET. Para publicar con archivos, convertimos
-// cada archivo a base64 y lo incluimos como parámetro. Si el total
-// supera ~6000 chars de URL, advertimos y pedimos quitar archivos.
 async function guardarNoticia(publicar) {
   var titulo    = document.getElementById('f-titulo').value.trim();
   var categoria = document.getElementById('f-categoria').value;
   var autor     = document.getElementById('f-autor').value.trim();
   var cuerpo    = document.getElementById('f-cuerpo').value.trim();
-  if (!titulo)    { mostrarToast('El título es obligatorio', 'error'); return; }
-  if (!categoria) { mostrarToast('Selecciona una categoría', 'error'); return; }
-  if (!autor)     { mostrarToast('El autor es obligatorio', 'error'); return; }
-  if (!cuerpo)    { mostrarToast('El cuerpo es obligatorio', 'error'); return; }
+
+  if (!titulo)    { mostrarToast('El título es obligatorio', 'error');    return; }
+  if (!categoria) { mostrarToast('Selecciona una categoría', 'error');   return; }
+  if (!autor)     { mostrarToast('El autor es obligatorio', 'error');    return; }
+  if (!cuerpo)    { mostrarToast('El cuerpo es obligatorio', 'error');   return; }
 
   mostrarLoading(publicar ? 'Publicando...' : 'Guardando borrador...');
 
@@ -664,45 +659,37 @@ async function guardarNoticia(publicar) {
   var archivosB64 = [];
   for (var i = 0; i < archivosSeleccionados.length; i++) {
     var b64 = await fileToBase64(archivosSeleccionados[i]);
-    archivosB64.push({ nombre: archivosSeleccionados[i].name, base64: b64, mimeType: archivosSeleccionados[i].type });
+    archivosB64.push({
+      nombre:   archivosSeleccionados[i].name,
+      base64:   b64,
+      mimeType: archivosSeleccionados[i].type
+    });
   }
 
-  // Construir payload completo
-  var payload = {
-    titulo:     titulo,
-    subtitulo:  document.getElementById('f-subtitulo').value.trim(),
-    categoria:  categoria,
-    autor:      autor,
-    cuerpo:     cuerpo,
-    tipo:       document.getElementById('f-tipo').value,
-    publicar:   publicar ? 'true' : 'false',
-    archivos:   JSON.stringify(archivosB64),
-    emailAutor: sesionActual.email,
-    tokenAcceso:tokenActual,
-    action:     'publicarNoticia'
+  var params = {
+    action:      'publicarNoticia',
+    titulo:      titulo,
+    subtitulo:   document.getElementById('f-subtitulo').value.trim(),
+    categoria:   categoria,
+    autor:       autor,
+    cuerpo:      cuerpo,
+    tipo:        document.getElementById('f-tipo').value,
+    publicar:    publicar ? 'true' : 'false',
+    archivos:    JSON.stringify(archivosB64),
+    emailAutor:  sesionActual.email,
+    tokenAcceso: tokenActual
   };
 
-  // Verificar longitud total aproximada de la URL resultante
-  var urlTest = APPS_URL + '?' + Object.keys(payload).map(function(k) {
-    return encodeURIComponent(k) + '=' + encodeURIComponent(payload[k]);
-  }).join('&');
-
-  if (urlTest.length > 7500) {
-    ocultarLoading();
-    mostrarToast('Los archivos son demasiado grandes para enviar. Publica sin archivos y súbelos luego desde Drive.', 'error');
-    return;
-  }
-
   try {
-    var res = await apiWrite(payload, 60000);
+    var res = await apiWrite(params, 60000);
     ocultarLoading();
-    if (res.ok) {
+    if (res && res.ok) {
       mostrarToast(res.mensaje, 'success');
       limpiarFormulario();
       cargarNoticias();
       cargarDashboard();
     } else {
-      mostrarToast('Error: ' + res.error, 'error');
+      mostrarToast('Error: ' + (res && res.error || 'desconocido'), 'error');
     }
   } catch(err) {
     ocultarLoading();
@@ -719,7 +706,7 @@ function fileToBase64(file) {
   });
 }
 
-// ══ TABLA ══
+// ══ TABLA NOTICIAS ══
 async function cargarNoticias() {
   try {
     var noticias = await api({
@@ -728,6 +715,8 @@ async function cargarNoticias() {
       token:  tokenActual
     });
     noticiasCache = noticias || [];
+
+    // Poblar filtro de meses
     var mesesUnicos = [];
     noticiasCache.forEach(function(n) {
       if (n.mes && mesesUnicos.indexOf(n.mes) === -1) mesesUnicos.push(n.mes);
@@ -742,6 +731,8 @@ async function cargarNoticias() {
     renderizarTabla(noticiasCache);
   } catch(err) {
     mostrarToast('Error cargando noticias: ' + err.message, 'error');
+    document.getElementById('news-tbody').innerHTML =
+      '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--accent)">❌ ' + err.message + '</td></tr>';
   }
 }
 
@@ -753,14 +744,16 @@ function renderizarTabla(noticias) {
   }
   tbody.innerHTML = noticias.map(function(n) {
     return '<tr>' +
-      '<td><strong>' + escapar(n.titulo) + '</strong>' + (n.subtitulo ? '<br><small style="color:var(--ink-soft)">' + escapar(n.subtitulo.substring(0,60)) + '…</small>' : '') + '</td>' +
+      '<td><strong>' + escapar(n.titulo) + '</strong>' +
+        (n.subtitulo ? '<br><small style="color:var(--ink-soft)">' + escapar(n.subtitulo.substring(0,60)) + '…</small>' : '') +
+      '</td>' +
       '<td>' + escapar(n.categoria) + '</td>' +
       '<td><span class="badge badge-tipo">' + escapar(n.tipo) + '</span></td>' +
       '<td style="white-space:nowrap">' + escapar(n.fecha) + '</td>' +
       '<td><span class="badge ' + (n.estado === 'publicado' ? 'badge-pub' : 'badge-draft') + '">' + escapar(n.estado) + '</span></td>' +
       '<td><div class="actions-cell">' +
         (n.estado === 'borrador'
-          ? '<button class="act-btn act-pub" onclick="cambiarEstado(\'' + n.id + '\',\'publicado\')">📤 Publicar</button>'
+          ? '<button class="act-btn act-pub"   onclick="cambiarEstado(\'' + n.id + '\',\'publicado\')">📤 Publicar</button>'
           : '<button class="act-btn act-draft" onclick="cambiarEstado(\'' + n.id + '\',\'borrador\')">⬇️ Borrador</button>') +
         '<button class="act-btn act-del" onclick="confirmarEliminar(\'' + n.id + '\',\'' + escapar(n.titulo).replace(/'/g,"\\'") + '\')">🗑️ Eliminar</button>' +
       '</div></td>' +
@@ -794,9 +787,17 @@ async function cambiarEstado(id, estado) {
       token:  tokenActual
     });
     ocultarLoading();
-    if (res.ok) { mostrarToast('Estado actualizado', 'success'); cargarNoticias(); cargarDashboard(); }
-    else mostrarToast('Error: ' + res.error, 'error');
-  } catch(err) { ocultarLoading(); mostrarToast('Error: ' + err.message, 'error'); }
+    if (res && res.ok) {
+      mostrarToast('Estado actualizado ✓', 'success');
+      cargarNoticias();
+      cargarDashboard();
+    } else {
+      mostrarToast('Error: ' + (res && res.error || 'desconocido'), 'error');
+    }
+  } catch(err) {
+    ocultarLoading();
+    mostrarToast('Error: ' + err.message, 'error');
+  }
 }
 
 async function confirmarEliminar(id, titulo) {
@@ -810,9 +811,17 @@ async function confirmarEliminar(id, titulo) {
       token:  tokenActual
     });
     ocultarLoading();
-    if (res.ok) { mostrarToast('Noticia eliminada', 'success'); cargarNoticias(); cargarDashboard(); }
-    else mostrarToast('Error: ' + res.error, 'error');
-  } catch(err) { ocultarLoading(); mostrarToast('Error: ' + err.message, 'error'); }
+    if (res && res.ok) {
+      mostrarToast('Noticia eliminada ✓', 'success');
+      cargarNoticias();
+      cargarDashboard();
+    } else {
+      mostrarToast('Error: ' + (res && res.error || 'desconocido'), 'error');
+    }
+  } catch(err) {
+    ocultarLoading();
+    mostrarToast('Error: ' + err.message, 'error');
+  }
 }
 
 // ══ SECCIÓN IA ══
@@ -820,21 +829,34 @@ async function cargarEventosCalendario() {
   var container = document.getElementById('eventos-container');
   container.innerHTML = '<div class="generando-overlay"><div class="spin"></div><p>Leyendo calendario institucional...</p></div>';
   document.getElementById('ia-preview').classList.remove('visible');
+  document.getElementById('ia-preview').innerHTML = '';
   eventoSeleccionado = null;
+
   try {
     var eventos = await api({
       action: 'eventosCalendario',
       email:  sesionActual.email,
       token:  tokenActual
     });
+
     if (!eventos || eventos.error) {
-      container.innerHTML = '<div class="no-eventos"><div class="icon">📅</div><p style="color:var(--accent);font-weight:600">Error al leer el calendario</p><p style="margin-top:8px;font-size:0.85rem">' + (eventos ? eventos.error : 'Sin respuesta') + '</p></div>';
+      container.innerHTML =
+        '<div class="no-eventos"><div class="icon">📅</div>' +
+        '<p style="color:var(--accent);font-weight:600">Error al leer el calendario</p>' +
+        '<p style="margin-top:8px;font-size:0.85rem">' + escapar((eventos && eventos.error) || 'Sin respuesta') + '</p>' +
+        '</div>';
       return;
     }
     if (!eventos.length) {
-      container.innerHTML = '<div class="no-eventos"><div class="icon">📅</div><p style="font-weight:600;margin-bottom:8px">No hay eventos próximos</p><p style="font-size:0.85rem">No se encontraron eventos en los próximos 60 días.</p></div>';
+      container.innerHTML =
+        '<div class="no-eventos"><div class="icon">📅</div>' +
+        '<p style="font-weight:600;margin-bottom:8px">No hay eventos próximos</p>' +
+        '<p style="font-size:0.85rem">No se encontraron eventos en los próximos 60 días.</p>' +
+        '</div>';
       return;
     }
+
+    window._eventosIA = eventos;
     container.innerHTML =
       '<p style="font-size:0.85rem;color:var(--ink-soft);margin-bottom:16px">Se encontraron <strong>' + eventos.length + ' eventos</strong>. Haz clic en uno para generar la noticia.</p>' +
       '<div class="eventos-grid">' +
@@ -847,9 +869,13 @@ async function cargarEventosCalendario() {
           '</div>';
       }).join('') +
       '</div>';
-    window._eventosIA = eventos;
+
   } catch(err) {
-    container.innerHTML = '<div class="no-eventos"><div class="icon">⚠️</div><p style="color:var(--accent);font-weight:600">Error de conexión</p><p style="margin-top:8px;font-size:0.85rem">' + escapar(err.message) + '</p></div>';
+    container.innerHTML =
+      '<div class="no-eventos"><div class="icon">⚠️</div>' +
+      '<p style="color:var(--accent);font-weight:600">Error de conexión</p>' +
+      '<p style="margin-top:8px;font-size:0.85rem">' + escapar(err.message) + '</p>' +
+      '</div>';
   }
 }
 
@@ -865,10 +891,13 @@ async function generarConIA() {
   if (!eventoSeleccionado) return;
   var preview = document.getElementById('ia-preview');
   preview.classList.add('visible');
-  preview.innerHTML = '<div class="generando-overlay" style="padding:60px"><div class="spin"></div><p style="color:#7c3aed;font-weight:600;margin-top:8px">La IA está redactando la noticia...</p><p style="font-size:0.82rem;color:var(--ink-soft);margin-top:4px">Esto puede tomar varios segundos</p></div>';
+  preview.innerHTML =
+    '<div class="generando-overlay" style="padding:60px">' +
+    '<div class="spin"></div>' +
+    '<p style="color:#7c3aed;font-weight:600;margin-top:8px">La IA está redactando la noticia...</p>' +
+    '<p style="font-size:0.82rem;color:var(--ink-soft);margin-top:4px">Esto puede tomar varios segundos</p>' +
+    '</div>';
 
-  // El evento puede tener campos con caracteres especiales — lo serializamos
-  // de forma segura pasando campo a campo (evita problemas con JSON en URL).
   var ev = eventoSeleccionado;
   try {
     var res = await apiWrite({
@@ -879,16 +908,25 @@ async function generarConIA() {
       eventoFecha:   ev.fecha        || '',
       eventoLegible: ev.fechaLegible || '',
       eventoDesc:    ev.descripcion  || ''
-    }, 90000);  // IA puede tardar más
+    }, 90000);
 
-    if (res.ok) {
-      noticiaIAActual = res.noticia;
+    if (res && res.ok) {
       mostrarPreviewIA(res.noticia);
     } else {
-      preview.innerHTML = '<div class="no-eventos"><div class="icon">⚠️</div><p style="color:var(--accent);font-weight:600">Error generando noticia</p><p style="margin-top:8px;font-size:0.85rem">' + escapar(res.error) + '</p><button class="btn btn-ghost" style="margin-top:16px" onclick="generarConIA()">🔄 Reintentar</button></div>';
+      preview.innerHTML =
+        '<div class="no-eventos"><div class="icon">⚠️</div>' +
+        '<p style="color:var(--accent);font-weight:600">Error generando noticia</p>' +
+        '<p style="margin-top:8px;font-size:0.85rem">' + escapar((res && res.error) || 'desconocido') + '</p>' +
+        '<button class="btn btn-ghost" style="margin-top:16px" onclick="generarConIA()">🔄 Reintentar</button>' +
+        '</div>';
     }
   } catch(err) {
-    preview.innerHTML = '<div class="no-eventos"><div class="icon">⚠️</div><p style="color:var(--accent);font-weight:600">Error de conexión</p><p style="margin-top:8px;font-size:0.85rem">' + escapar(err.message) + '</p><button class="btn btn-ghost" style="margin-top:16px" onclick="generarConIA()">🔄 Reintentar</button></div>';
+    preview.innerHTML =
+      '<div class="no-eventos"><div class="icon">⚠️</div>' +
+      '<p style="color:var(--accent);font-weight:600">Error de conexión</p>' +
+      '<p style="margin-top:8px;font-size:0.85rem">' + escapar(err.message) + '</p>' +
+      '<button class="btn btn-ghost" style="margin-top:16px" onclick="generarConIA()">🔄 Reintentar</button>' +
+      '</div>';
   }
 }
 
@@ -903,8 +941,10 @@ function mostrarPreviewIA(noticia) {
   preview.innerHTML =
     '<div class="ia-preview-header">' +
       '<div class="ia-emoji">' + escapar(noticia.emojiTema || '✨') + '</div>' +
-      '<div><div style="font-family:var(--font-head);font-size:1.1rem;font-weight:700;color:var(--ink);margin-bottom:4px">Noticia generada por IA</div>' +
-      '<div class="ia-badge">IA · ' + escapar(eventoSeleccionado.fechaLegible) + '</div></div>' +
+      '<div>' +
+        '<div style="font-family:var(--font-head);font-size:1.1rem;font-weight:700;color:var(--ink);margin-bottom:4px">Noticia generada por IA</div>' +
+        '<div class="ia-badge">IA · ' + escapar((eventoSeleccionado && eventoSeleccionado.fechaLegible) || '') + '</div>' +
+      '</div>' +
     '</div>' +
     '<div class="ia-field"><label>Título</label><input type="text" id="ia-titulo" value="' + escapar(noticia.titulo) + '"></div>' +
     '<div class="ia-field"><label>Subtítulo</label><input type="text" id="ia-subtitulo" value="' + escapar(noticia.subtitulo) + '"></div>' +
@@ -912,8 +952,8 @@ function mostrarPreviewIA(noticia) {
     '<div class="ia-field"><label>Autor</label><input type="text" id="ia-autor" value="Redacción La Cima"></div>' +
     '<div class="ia-field"><label>Cuerpo de la noticia</label><textarea id="ia-cuerpo" style="min-height:200px">' + escapar(noticia.cuerpo) + '</textarea></div>' +
     '<div class="ia-actions">' +
-      '<button class="btn btn-ghost" onclick="generarConIA()">🔄 Regenerar</button>' +
-      '<button class="btn btn-draft" onclick="publicarIANoticia(false)">💾 Borrador</button>' +
+      '<button class="btn btn-ghost"   onclick="generarConIA()">🔄 Regenerar</button>' +
+      '<button class="btn btn-draft"   onclick="publicarIANoticia(false)">💾 Borrador</button>' +
       '<button class="btn btn-publish" onclick="publicarIANoticia(true)">🚀 Publicar</button>' +
     '</div>';
 }
@@ -924,8 +964,9 @@ async function publicarIANoticia(publicar) {
   var categoria = document.getElementById('ia-categoria').value;
   var autor     = document.getElementById('ia-autor').value.trim();
   var cuerpo    = document.getElementById('ia-cuerpo').value.trim();
+
   if (!titulo) { mostrarToast('El título es obligatorio', 'error'); return; }
-  if (!autor)  { mostrarToast('El autor es obligatorio', 'error'); return; }
+  if (!autor)  { mostrarToast('El autor es obligatorio',  'error'); return; }
   if (!cuerpo) { mostrarToast('El cuerpo es obligatorio', 'error'); return; }
 
   mostrarLoading(publicar ? 'Publicando noticia IA...' : 'Guardando borrador IA...');
@@ -943,16 +984,18 @@ async function publicarIANoticia(publicar) {
       emailAutor:  sesionActual.email,
       tokenAcceso: tokenActual
     }, 60000);
+
     ocultarLoading();
-    if (res.ok) {
+    if (res && res.ok) {
       mostrarToast(res.mensaje, 'success');
       cargarNoticias();
       cargarDashboard();
       document.getElementById('ia-preview').classList.remove('visible');
+      document.getElementById('ia-preview').innerHTML = '';
       document.querySelectorAll('.evento-card').forEach(function(c) { c.classList.remove('selected'); });
       eventoSeleccionado = null;
     } else {
-      mostrarToast('Error: ' + res.error, 'error');
+      mostrarToast('Error: ' + (res && res.error || 'desconocido'), 'error');
     }
   } catch(err) {
     ocultarLoading();
@@ -973,12 +1016,14 @@ async function cargarDashboard() {
     document.getElementById('stat-pub').textContent   = stats.publicadas;
     document.getElementById('stat-draft').textContent = stats.borradores;
     renderizarBarras('cat-bars', stats.porCategoria, '#c0392b');
-    renderizarBarras('mes-bars', stats.porMes, '#d4a017');
-  } catch(err) {}
+    renderizarBarras('mes-bars', stats.porMes,       '#d4a017');
+  } catch(err) {
+    console.warn('Dashboard error:', err.message);
+  }
 }
 
 function renderizarBarras(id, data, color) {
-  var entries = Object.entries(data).sort(function(a,b) { return b[1]-a[1]; });
+  var entries = Object.entries(data || {}).sort(function(a,b) { return b[1]-a[1]; });
   var max = entries.length ? entries[0][1] : 1;
   document.getElementById(id).innerHTML = entries.map(function(entry) {
     var label = entry[0], val = entry[1];
@@ -1002,7 +1047,7 @@ function mostrarToast(mensaje, tipo) {
   t.className = 'toast ' + tipo;
   t.innerHTML = '<span>' + (icons[tipo] || 'ℹ️') + '</span><span>' + mensaje + '</span>';
   document.getElementById('toast-container').appendChild(t);
-  setTimeout(function() { t.remove(); }, 5000);
+  setTimeout(function() { if (t.parentNode) t.remove(); }, 5000);
 }
 
 function mostrarLoading(msg) {
@@ -1019,7 +1064,7 @@ function formatBytes(b) {
 }
 
 function escapar(str) {
-  if (!str) return '';
+  if (str === null || str === undefined) return '';
   return String(str)
     .replace(/&/g,'&amp;')
     .replace(/</g,'&lt;')
