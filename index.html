@@ -329,6 +329,7 @@
     .footer-brand .fb-name em { font-style: italic; color: var(--rojo2); }
     .footer-right { font-size: 0.75rem; color: rgba(255,255,255,0.25); text-align: right; line-height: 1.8; }
 
+    /* ── MODAL BASE (noticias + suscripción) ── */
     .modal-overlay {
       position: fixed; inset: 0; background: rgba(10,10,18,0.78);
       backdrop-filter: blur(8px); display: none; align-items: flex-start;
@@ -377,6 +378,39 @@
       text-decoration: none; display: flex; align-items: center; gap: 0.3rem;
     }
     .m-drive-link:hover { text-decoration: underline; }
+
+    /* ── MODAL SUSCRIPCIÓN ── */
+    .sus-label {
+      font-size: 0.72rem; font-weight: 700; color: var(--gris3);
+      text-transform: uppercase; letter-spacing: 0.05em;
+      display: block; margin-bottom: 0.5rem;
+    }
+    .sus-input {
+      width: 100%; padding: 0.7rem 1rem;
+      border: 1.5px solid var(--gris2); border-radius: 10px;
+      font-family: var(--ff-body); font-size: 0.95rem;
+      color: var(--negro); outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .sus-input:focus {
+      border-color: var(--rojo);
+      box-shadow: 0 0 0 3px rgba(208,2,27,0.1);
+    }
+    .sus-submit {
+      width: 100%; margin-top: 1rem;
+      padding: 0.8rem; background: var(--rojo); color: white;
+      border: none; border-radius: 10px;
+      font-family: var(--ff-title); font-size: 1rem; font-weight: 700;
+      letter-spacing: 0.01em; cursor: pointer;
+      transition: background 0.2s, transform 0.15s;
+    }
+    .sus-submit:hover { background: #a80015; transform: translateY(-1px); }
+    .sus-submit:active { transform: translateY(0); }
+    .sus-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+    .sus-msg {
+      margin-top: 0.75rem; font-size: 0.82rem;
+      text-align: center; min-height: 1.1rem; color: var(--gris3);
+    }
 
     @media (max-width: 900px) {
       .cards-grid { grid-template-columns: repeat(2, 1fr); }
@@ -490,6 +524,7 @@
   </div>
 </footer>
 
+<!-- MODAL NOTICIAS -->
 <div class="modal-overlay" id="modal" onclick="cerrarModal(event)">
   <div class="modal">
     <div class="m-header">
@@ -504,7 +539,50 @@
       <div class="m-cuerpo" id="m-cuerpo">Cargando…</div>
     </div>
     <div class="m-footer">
-      <a class="m-drive-link" id="m-drive" href="#" target="_blank" style="display:none"/a>
+      <a class="m-drive-link" id="m-drive" href="#" target="_blank" style="display:none"></a>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL SUSCRIPCIÓN -->
+<div class="modal-overlay" id="modal-suscripcion" onclick="cerrarModalSuscripcion(event)">
+  <div class="modal" style="max-width:460px">
+    <div class="m-header" style="padding-bottom:1.2rem">
+      <button class="m-close" onclick="cerrarModalSuscripcion()">✕</button>
+      <div style="font-size:2.4rem;margin-bottom:0.7rem">✉️</div>
+      <h2 class="m-title" style="font-size:1.4rem">Suscríbete al periódico</h2>
+      <p class="m-meta" style="margin-top:0.5rem;display:block">
+        Recibe las noticias de Fe y Alegría La Cima directo en tu correo cada vez que se publique algo nuevo.
+      </p>
+    </div>
+    <div class="m-divider"></div>
+    <div class="m-body">
+
+      <!-- Formulario -->
+      <div id="sus-form">
+        <label class="sus-label" for="sus-email">Tu correo electrónico</label>
+        <input
+          class="sus-input"
+          type="email"
+          id="sus-email"
+          placeholder="nombre@correo.com"
+          onkeydown="if(event.key==='Enter') enviarSuscripcion()"
+        >
+        <button class="sus-submit" id="sus-btn" onclick="enviarSuscripcion()">
+          Suscribirme →
+        </button>
+        <p class="sus-msg" id="sus-msg"></p>
+      </div>
+
+      <!-- Confirmación -->
+      <div id="sus-ok" style="display:none;text-align:center;padding:2rem 0 1rem">
+        <div style="font-size:3rem;margin-bottom:0.8rem">🎉</div>
+        <p style="font-family:var(--ff-title);font-size:1.3rem;font-weight:900;color:var(--negro);margin-bottom:0.5rem">¡Listo!</p>
+        <p style="font-size:0.88rem;color:var(--gris3);line-height:1.6">
+          Ya estás suscrito. Recibirás las próximas noticias<br>directo en tu correo.
+        </p>
+      </div>
+
     </div>
   </div>
 </div>
@@ -617,20 +695,17 @@ function filtradas() {
   );
 }
 
-// ====== CÓDIGO NUEVO ======
 function renderCards() {
   const list = filtradas();
   const grid = document.getElementById('cards-grid');
   const count = document.getElementById('news-count');
 
   let mostrar = list;
-
   if (!filterCat && !filterQ && !mesActivo && list.length > 6) {
     mostrar = list.slice(6);
   }
 
   count.textContent = mostrar.length ? `${mostrar.length} publicaciones` : '';
-
 
   if (!mostrar.length) {
     grid.innerHTML = `<div class="empty-state"><div class="es-icon">📭</div><h3>Sin noticias aquí</h3><p>Prueba otra categoría.</p></div>`;
@@ -705,6 +780,7 @@ function filtrarMes(mes, btn) {
   document.querySelector('.news-section').scrollIntoView({ behavior: 'smooth' });
 }
 
+// ── MODAL NOTICIAS ──
 function abrirModal(n) {
   const colors = CAT_COLORS[n.categoria] || CAT_COLORS['Noticias Generales'];
   const pill = document.getElementById('m-cat');
@@ -741,90 +817,77 @@ function cerrarModal(e) {
   document.body.style.overflow = '';
 }
 
-document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarModal(e); });
-
-function esc(n) { return JSON.stringify(n).replace(/"/g,'&quot;'); }
-</script>
-  
-<!-- MODAL SUSCRIPCIÓN -->
-<div class="modal-overlay" id="modal-suscripcion" onclick="cerrarModalSuscripcion(event)">
-  <div class="modal" style="max-width:440px">
-    <div class="m-header">
-      <button class="m-close" onclick="cerrarModalSuscripcion()">✕</button>
-      <div style="font-size:2rem;margin-bottom:0.6rem">✉️</div>
-      <h2 class="m-title">Suscríbete al periódico</h2>
-      <div class="m-meta" style="margin-top:0.5rem">Recibe las noticias de Fe y Alegría La Cima directo en tu correo.</div>
-    </div>
-    <div class="m-divider"></div>
-    <div class="m-body">
-      <div id="sus-form">
-        <div style="margin-bottom:1rem">
-          <label style="font-size:0.78rem;font-weight:700;color:#6e6e80;text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:0.5rem">Tu correo electrónico</label>
-          <input type="email" id="sus-email" placeholder="nombre@correo.com"
-            style="width:100%;padding:0.65rem 1rem;border:1.5px solid #e8e8ec;border-radius:10px;font-family:var(--ff-body);font-size:0.95rem;outline:none;transition:border-color 0.2s"
-            onfocus="this.style.borderColor='#d0021b'" onblur="this.style.borderColor='#e8e8ec'"
-            onkeydown="if(event.key==='Enter')enviarSuscripcion()">
-        </div>
-        <button onclick="enviarSuscripcion()"
-          style="width:100%;padding:0.75rem;background:var(--rojo);color:white;border:none;border-radius:10px;font-family:var(--ff-body);font-size:0.95rem;font-weight:700;cursor:pointer;transition:background 0.2s"
-          onmouseover="this.style.background='#a80015'" onmouseout="this.style.background='var(--rojo)'">
-          Suscribirme →
-        </button>
-        <p id="sus-msg" style="margin-top:0.8rem;font-size:0.82rem;text-align:center;min-height:1.2rem;color:#6e6e80"></p>
-      </div>
-      <div id="sus-ok" style="display:none;text-align:center;padding:1.5rem 0">
-        <div style="font-size:2.8rem;margin-bottom:0.7rem">🎉</div>
-        <p style="font-family:var(--ff-title);font-size:1.2rem;font-weight:700;color:var(--negro);margin-bottom:0.4rem">¡Listo!</p>
-        <p style="font-size:0.88rem;color:#6e6e80">Ya estás suscrito. Recibirás las próximas noticias en tu correo.</p>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script>
+// ── MODAL SUSCRIPCIÓN ──
 function abrirModalSuscripcion() {
   document.getElementById('sus-email').value = '';
   document.getElementById('sus-msg').textContent = '';
+  document.getElementById('sus-msg').style.color = 'var(--gris3)';
   document.getElementById('sus-form').style.display = 'block';
-  document.getElementById('sus-ok').style.display = 'none';
+  document.getElementById('sus-ok').style.display   = 'none';
+  document.getElementById('sus-btn').disabled = false;
+  document.getElementById('sus-btn').textContent = 'Suscribirme →';
   document.getElementById('modal-suscripcion').classList.add('open');
   document.body.style.overflow = 'hidden';
-  setTimeout(() => document.getElementById('sus-email').focus(), 100);
+  setTimeout(() => document.getElementById('sus-email').focus(), 120);
 }
+
 function cerrarModalSuscripcion(e) {
   if (e && e.target !== document.getElementById('modal-suscripcion') && !e.target.closest('.m-close')) return;
   document.getElementById('modal-suscripcion').classList.remove('open');
   document.body.style.overflow = '';
 }
+
 async function enviarSuscripcion() {
-  var email = document.getElementById('sus-email').value.trim();
-  var msg   = document.getElementById('sus-msg');
-  if (!email || !email.includes('@')) {
-    msg.style.color = '#d0021b';
+  const email = document.getElementById('sus-email').value.trim();
+  const msg   = document.getElementById('sus-msg');
+  const btn   = document.getElementById('sus-btn');
+
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    msg.style.color = 'var(--rojo)';
     msg.textContent = '⚠️ Ingresa un correo válido.';
+    document.getElementById('sus-email').focus();
     return;
   }
-  msg.style.color = '#6e6e80';
-  msg.textContent = 'Guardando...';
+
+  btn.disabled = true;
+  btn.textContent = 'Enviando…';
+  msg.style.color = 'var(--gris3)';
+  msg.textContent = '';
+
   try {
-    var res = await fetch(APPS_URL + '?action=suscribir&email=' + encodeURIComponent(email));
-    var data = await res.json();
-    if (data.ok) {
+    const res  = await fetch(APPS_URL + '?action=suscribir&email=' + encodeURIComponent(email));
+    const data = await res.json();
+
+    if (data.ok && !data.yaExiste) {
       document.getElementById('sus-form').style.display = 'none';
-      document.getElementById('sus-ok').style.display = 'block';
-    } else if (data.yaExiste) {
-      msg.style.color = '#6e6e80';
+      document.getElementById('sus-ok').style.display   = 'block';
+    } else if (data.ok && data.yaExiste) {
+      btn.disabled = false;
+      btn.textContent = 'Suscribirme →';
+      msg.style.color = 'var(--gris3)';
       msg.textContent = 'ℹ️ Este correo ya está suscrito.';
     } else {
-      msg.style.color = '#d0021b';
-      msg.textContent = '❌ Error: ' + (data.error || 'intenta de nuevo.');
+      btn.disabled = false;
+      btn.textContent = 'Suscribirme →';
+      msg.style.color = 'var(--rojo)';
+      msg.textContent = '❌ ' + (data.error || 'Algo salió mal. Intenta de nuevo.');
     }
-  } catch(e) {
-    msg.style.color = '#d0021b';
+  } catch(err) {
+    btn.disabled = false;
+    btn.textContent = 'Suscribirme →';
+    msg.style.color = 'var(--rojo)';
     msg.textContent = '❌ Sin conexión. Intenta de nuevo.';
   }
-}  
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    cerrarModal(e);
+    cerrarModalSuscripcion(e);
+  }
+});
+
+function esc(n) { return JSON.stringify(n).replace(/"/g,'&quot;'); }
 </script>
-  
 </body>
 </html>
