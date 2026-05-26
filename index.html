@@ -467,7 +467,7 @@
     <h4>¿Quieres recibir nuestras noticias?</h4>
     <p>Suscríbete y recibe las últimas novedades de Fe y Alegría La Cima.</p>
   </div>
-  <button class="suscribe-btn">Suscribirme</button>
+  <button class="suscribe-btn" onclick="abrirModalSuscripcion()">Suscribirme</button>
 </div>
   
 <div class="hist-section" id="hist-section" style="display:none">
@@ -745,5 +745,87 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarModal(
 
 function esc(n) { return JSON.stringify(n).replace(/"/g,'&quot;'); }
 </script>
+  
+<!-- MODAL SUSCRIPCIÓN -->
+<div class="modal-overlay" id="modal-suscripcion" onclick="cerrarModalSuscripcion(event)">
+  <div class="modal" style="max-width:440px">
+    <div class="m-header">
+      <button class="m-close" onclick="cerrarModalSuscripcion()">✕</button>
+      <div style="font-size:2rem;margin-bottom:0.6rem">✉️</div>
+      <h2 class="m-title">Suscríbete al periódico</h2>
+      <div class="m-meta" style="margin-top:0.5rem">Recibe las noticias de Fe y Alegría La Cima directo en tu correo.</div>
+    </div>
+    <div class="m-divider"></div>
+    <div class="m-body">
+      <div id="sus-form">
+        <div style="margin-bottom:1rem">
+          <label style="font-size:0.78rem;font-weight:700;color:#6e6e80;text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:0.5rem">Tu correo electrónico</label>
+          <input type="email" id="sus-email" placeholder="nombre@correo.com"
+            style="width:100%;padding:0.65rem 1rem;border:1.5px solid #e8e8ec;border-radius:10px;font-family:var(--ff-body);font-size:0.95rem;outline:none;transition:border-color 0.2s"
+            onfocus="this.style.borderColor='#d0021b'" onblur="this.style.borderColor='#e8e8ec'"
+            onkeydown="if(event.key==='Enter')enviarSuscripcion()">
+        </div>
+        <button onclick="enviarSuscripcion()"
+          style="width:100%;padding:0.75rem;background:var(--rojo);color:white;border:none;border-radius:10px;font-family:var(--ff-body);font-size:0.95rem;font-weight:700;cursor:pointer;transition:background 0.2s"
+          onmouseover="this.style.background='#a80015'" onmouseout="this.style.background='var(--rojo)'">
+          Suscribirme →
+        </button>
+        <p id="sus-msg" style="margin-top:0.8rem;font-size:0.82rem;text-align:center;min-height:1.2rem;color:#6e6e80"></p>
+      </div>
+      <div id="sus-ok" style="display:none;text-align:center;padding:1.5rem 0">
+        <div style="font-size:2.8rem;margin-bottom:0.7rem">🎉</div>
+        <p style="font-family:var(--ff-title);font-size:1.2rem;font-weight:700;color:var(--negro);margin-bottom:0.4rem">¡Listo!</p>
+        <p style="font-size:0.88rem;color:#6e6e80">Ya estás suscrito. Recibirás las próximas noticias en tu correo.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function abrirModalSuscripcion() {
+  document.getElementById('sus-email').value = '';
+  document.getElementById('sus-msg').textContent = '';
+  document.getElementById('sus-form').style.display = 'block';
+  document.getElementById('sus-ok').style.display = 'none';
+  document.getElementById('modal-suscripcion').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => document.getElementById('sus-email').focus(), 100);
+}
+function cerrarModalSuscripcion(e) {
+  if (e && e.target !== document.getElementById('modal-suscripcion') && !e.target.closest('.m-close')) return;
+  document.getElementById('modal-suscripcion').classList.remove('open');
+  document.body.style.overflow = '';
+}
+async function enviarSuscripcion() {
+  var email = document.getElementById('sus-email').value.trim();
+  var msg   = document.getElementById('sus-msg');
+  if (!email || !email.includes('@')) {
+    msg.style.color = '#d0021b';
+    msg.textContent = '⚠️ Ingresa un correo válido.';
+    return;
+  }
+  msg.style.color = '#6e6e80';
+  msg.textContent = 'Guardando...';
+  try {
+    var res = await fetch(APPS_URL + '?action=suscribir&email=' + encodeURIComponent(email));
+    var data = await res.json();
+    if (data.ok) {
+      document.getElementById('sus-form').style.display = 'none';
+      document.getElementById('sus-ok').style.display = 'block';
+    } else if (data.yaExiste) {
+      msg.style.color = '#6e6e80';
+      msg.textContent = 'ℹ️ Este correo ya está suscrito.';
+    } else {
+      msg.style.color = '#d0021b';
+      msg.textContent = '❌ Error: ' + (data.error || 'intenta de nuevo.');
+    }
+  } catch(e) {
+    msg.style.color = '#d0021b';
+    msg.textContent = '❌ Sin conexión. Intenta de nuevo.';
+  }
+}
+  
+</script>
+  
 </body>
 </html>
