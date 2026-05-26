@@ -837,7 +837,7 @@ function cerrarModalSuscripcion(e) {
   document.body.style.overflow = '';
 }
 
-async function enviarSuscripcion() {
+function enviarSuscripcion() {
   const email = document.getElementById('sus-email').value.trim();
   const msg   = document.getElementById('sus-msg');
   const btn   = document.getElementById('sus-btn');
@@ -854,10 +854,25 @@ async function enviarSuscripcion() {
   msg.style.color = 'var(--gris3)';
   msg.textContent = '';
 
-  try {
-    const res  = await fetch(APPS_URL + '?action=suscribir&email=' + encodeURIComponent(email));
-    const data = await res.json();
+  // JSONP — mismo sistema que usa el admin, evita el bloqueo CORS
+  const cbName = '_sus_' + Date.now();
+  const script = document.createElement('script');
+  const timer  = setTimeout(function() {
+    cleanup();
+    btn.disabled = false;
+    btn.textContent = 'Suscribirme →';
+    msg.style.color = 'var(--rojo)';
+    msg.textContent = '❌ Sin respuesta del servidor. Intenta de nuevo.';
+  }, 20000);
 
+  function cleanup() {
+    clearTimeout(timer);
+    try { delete window[cbName]; } catch(e) { window[cbName] = undefined; }
+    if (script.parentNode) script.parentNode.removeChild(script);
+  }
+
+  window[cbName] = function(data) {
+    cleanup();
     if (data.ok && !data.yaExiste) {
       document.getElementById('sus-form').style.display = 'none';
       document.getElementById('sus-ok').style.display   = 'block';
@@ -872,13 +887,20 @@ async function enviarSuscripcion() {
       msg.style.color = 'var(--rojo)';
       msg.textContent = '❌ ' + (data.error || 'Algo salió mal. Intenta de nuevo.');
     }
-  } catch(err) {
+  };
+
+  script.onerror = function() {
+    cleanup();
     btn.disabled = false;
     btn.textContent = 'Suscribirme →';
     msg.style.color = 'var(--rojo)';
-    msg.textContent = '❌ Sin conexión. Intenta de nuevo.';
-  }
+    msg.textContent = '❌ No se pudo conectar. Intenta de nuevo.';
+  };
+
+  script.src = APPS_URL + '?action=suscribir&email=' + encodeURIComponent(email) + '&callback=' + cbName;
+  document.body.appendChild(script);
 }
+  
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     cerrarModal(e);
